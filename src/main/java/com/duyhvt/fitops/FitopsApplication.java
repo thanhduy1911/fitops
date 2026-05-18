@@ -1,0 +1,13 @@
+package com.duyhvt.fitops;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class FitopsApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(FitopsApplication.class, args);
+	}
+
+}

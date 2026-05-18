@@ -1,0 +1,94 @@
+HELP.md
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**
+!**/src/test/**
+mvnw
+mvnw.cmd
+pom.xml.versionsBackup
+.mvn
+.DS_Store
+.changed_projects
+*.log
+.env
+dev.env
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*/.bsp/
+*/.run/
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+
+### VS Code ###
+.vscode/
+
+### Claude Code ###
+.claude/worktrees/
+.worktrees/
+CLAUDE.md
+
+node-modules/
+/build/
+/target/
+/node-modules/
+web/node_modules/
+surefire-reports/
+/infer-out
+.flattened-pom.xml
+
+### Javascript BUILD ###
+bundle.js
+bundle.js.map
+built
+
+### Terraform ###
+.terraform
+.terraform.lock.hcl
+
+### logs folders ###
+logs/
+
+### Automation Tests ###
+cypress.env.json
+videos
+screenshots
+results
+node_modules
+automation/.yarn/install-state.gz
+downloads/
+automation/cypress/fixtures/common/bulk-ddx/processedFileSignals.json
+automation/cypress/fixtures/common/bulk-ddx/data/*
+automation/cypress/fixtures/common/bulk-ddx/processedFileSignals.csv
+
+
+### Telepresence ###
+devops/telepresence/*
+!devops/telepresence/local_development.sh
+!devops/telepresence/port_forward.sh
+
+### Skills ###
+.agents/
+.claude/
+skills-lock.json
+
+### Internal Docs ###
+docs/
