@@ -62,26 +62,62 @@ For full design details, see [`docs/system-design.md`](docs/system-design.md).
 
 - Java 21+
 - Docker Desktop
-- Node.js 20+
+- Node.js 20+ (Phase 2, for frontend)
 
-### Start the database
+### 1. Configure environment variables
+
+Copy `.env.example` to `.env` and fill in your values:
+
+```bash
+cp .env.example .env    # macOS / Linux
+copy .env.example .env  # Windows
+```
+
+Open `.env` and replace every `change_me` with a real value. The file explains each variable inline.
+
+> **Note:** `DB_USERNAME` / `DB_PASSWORD` (Spring Boot) must match `POSTGRES_USER` / `POSTGRES_PASSWORD` (Docker).
+> They are two names for the same credentials — one used by the container, one by the app.
+
+### 2. Start the database
 
 ```bash
 docker-compose up -d
 ```
 
-This starts PostgreSQL on `localhost:5432` and pgAdmin on `localhost:5050`.
+This starts two services:
 
-### Run the backend
+| Service  | URL                     | Purpose                    |
+|----------|-------------------------|----------------------------|
+| Postgres | `localhost:5432`        | Primary database           |
+| pgAdmin  | `http://localhost:5050` | Browser-based database GUI |
+
+pgAdmin waits for Postgres to be healthy before starting (health check: `pg_isready`).
+
+#### Using pgAdmin
+
+1. Open `http://localhost:5050` in your browser.
+2. Log in with `PGADMIN_DEFAULT_EMAIL` and `PGADMIN_DEFAULT_PASSWORD` from your `.env`.
+3. In the left panel, click **Servers → FitOps Local** — the connection is pre-registered.
+4. Enter your `POSTGRES_PASSWORD` when prompted. Check **Save password** to avoid re-entering it.
+
+#### Stopping and resetting
 
 ```bash
-./gradlew bootRun
+docker-compose down           # stop containers — data is preserved
+docker-compose down -v        # stop containers AND delete all data (full reset)
+docker-compose logs postgres  # view postgres logs if something goes wrong
 ```
 
-Flyway runs automatically on startup — all schemas and tables are created.  
+### 3. Run the backend
+
+```bash
+./mvnw spring-boot:run
+```
+
+Flyway runs automatically on startup — all schemas and tables are created.
 Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
 
-### Run the frontend
+### 4. Run the frontend
 
 ```bash
 cd frontend
