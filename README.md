@@ -1,6 +1,7 @@
 # FitOps — Fitness Operation
 
-A personal fitness operating system. Track kcal-in (food), kcal-out (workouts), body composition, and receive deterministic weekly insights — all in one self-hostable platform.
+A personal fitness operating system. Track kcal-in (food), kcal-out (workouts), body composition, and receive
+deterministic weekly insights — all in one self-hostable platform.
 
 ---
 
@@ -21,23 +22,24 @@ A personal fitness operating system. Track kcal-in (food), kcal-out (workouts), 
 
 | Concern    | Choice                                                   |
 |------------|----------------------------------------------------------|
-| Runtime    | Java 21 (virtual threads enabled)                        |
-| Framework  | Spring Boot 3.3 + Spring Modulith 1.2                    |
-| Build      | Gradle 8 (Kotlin DSL)                                    |
-| Database   | PostgreSQL 16 (schema-per-module)                        |
+| Runtime    | Java 21                                                  |
+| Framework  | Spring Boot 4.0.6 + Spring Modulith 2.0.6                |
+| Build      | Maven                                                    |
+| Database   | PostgreSQL 18 (schema-per-module)                        |
 | Migrations | Flyway 10                                                |
-| Auth       | Spring Security 6 + JWT (JJWT 0.12)                      |
-| Mapping    | MapStruct 1.6                                            |
+| Auth       | Spring Security 6 + JWT (JJWT 0.13)                      |
+| Mapping    | MapStruct 1.6.3                                          |
 | Cache      | Caffeine (L1) → Redis (L2, Phase 2)                      |
 | API docs   | SpringDoc OpenAPI 3.1                                    |
-| Testing    | JUnit 5 + Mockito + Testcontainers + RestAssured         |
+| Testing    | JUnit 6 + Mockito + Testcontainers + RestAssured         |
 | Frontend   | React 18 + Vite + TypeScript + Tailwind + TanStack Query |
 
 ---
 
 ## Architecture
 
-Modular monolith. Each module owns its PostgreSQL schema and exposes behaviour only through port interfaces or domain events. Spring Modulith validates boundaries in CI — no module can access another module's JPA repository.
+Modular monolith. Each module owns its PostgreSQL schema and exposes behaviour only through port interfaces or domain
+events. Spring Modulith validates boundaries in CI — no module can access another module's JPA repository.
 
 ```
 com.fitops/
@@ -108,7 +110,8 @@ Frontend runs at `http://localhost:5173`. API requests are proxied to `localhost
 - `2xx` responses return the resource, page, or command result directly.
 - `4xx`/`5xx` responses return RFC 7807 `ProblemDetail` with a stable `errorCode` field.
 
-See the [error code catalog](docs/system-design.md#26-error-code-catalog) and Swagger UI for full endpoint documentation.
+See the [error code catalog](docs/system-design.md#26-error-code-catalog) and Swagger UI for full endpoint
+documentation.
 
 ---
 
@@ -130,14 +133,14 @@ Cross-module calls go through published port interfaces only — no direct repos
 
 ## Implementation Roadmap
 
-| Phase | Scope |
-|-------|-------|
-| 1 | Foundation: Gradle, Docker Compose, CI, `shared` kernel, `identity` module (auth, JWT, body stats) |
-| 2 | `food` module (catalog, nutrition, meal logging) + `fitness` module (exercises, plans, sessions) |
-| 3 | `planning` module (goals, meal plans) + `progress` module (body metrics, daily summaries) + dashboard |
-| 4 | `insight` module (rule engine, weekly scheduled job) + frontend insights feed |
-| 5 | Deployment, data export/deletion, performance baseline |
-| 6 | AI integration (post-MVP, separate design doc) |
+| Phase | Scope                                                                                                 |
+|-------|-------------------------------------------------------------------------------------------------------|
+| 1     | Foundation: Gradle, Docker Compose, CI, `shared` kernel, `identity` module (auth, JWT, body stats)    |
+| 2     | `food` module (catalog, nutrition, meal logging) + `fitness` module (exercises, plans, sessions)      |
+| 3     | `planning` module (goals, meal plans) + `progress` module (body metrics, daily summaries) + dashboard |
+| 4     | `insight` module (rule engine, weekly scheduled job) + frontend insights feed                         |
+| 5     | Deployment, data export/deletion, performance baseline                                                |
+| 6     | AI integration (post-MVP, separate design doc)                                                        |
 
 ---
 
