@@ -3,7 +3,6 @@ target/
 !**/src/main/**
 !**/src/test/**
 pom.xml.versionsBackup
-.mvn
 .DS_Store
 .changed_projects
 *.log
