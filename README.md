@@ -190,6 +190,5 @@ fitops/
 │   ├── system-design.md     # Full architecture document
 │   └── adr/                 # Architecture Decision Records
 ├── docker-compose.yml
-├── CLAUDE.md                # AI agent rules for this project
 └── README.md
 ```
