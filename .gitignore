@@ -1,10 +1,7 @@
 HELP.md
 target/
-!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**
 !**/src/test/**
-mvnw
-mvnw.cmd
 pom.xml.versionsBackup
 .mvn
 .DS_Store
