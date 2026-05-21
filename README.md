@@ -38,12 +38,12 @@ deterministic weekly insights — all in one self-hostable platform.
 
 ## Architecture
 
-Modular monolith. Each module owns its PostgreSQL schema and exposes behaviour only through port interfaces or domain
+Modular monolith. Each module owns its PostgreSQL schema and exposes behavior only through port interfaces or domain
 events. Spring Modulith validates boundaries in CI — no module can access another module's JPA repository.
 
 ```
 com.fitops/
-├── shared/      # Kernel: BaseEntity, PaginatedResult, security, config
+├── commons/     # Kernel: BaseEntity, PaginatedResult, security, config
 ├── identity/    # Auth, users, JWT, refresh tokens
 ├── food/        # Food catalog, nutrition facts, meal logging (kcal-in)
 ├── fitness/     # Exercise library, workout plans, sessions, sets (kcal-out)
@@ -51,8 +51,6 @@ com.fitops/
 ├── progress/    # Body metrics, daily calorie summaries
 └── insight/     # Rule-based weekly analysis
 ```
-
-For full design details, see [`docs/system-design.md`](docs/system-design.md).
 
 ---
 
@@ -133,10 +131,10 @@ Frontend runs at `http://localhost:5173`. API requests are proxied to `localhost
 
 ```bash
 # All tests (includes module boundary validation via Spring Modulith)
-./gradlew test
+./mvnw test
 
 # With TestContainers — requires Docker running
-./gradlew test
+./mvnw test
 ```
 
 ---
@@ -171,7 +169,7 @@ Cross-module calls go through published port interfaces only — no direct repos
 
 | Phase | Scope                                                                                                 |
 |-------|-------------------------------------------------------------------------------------------------------|
-| 1     | Foundation: Gradle, Docker Compose, CI, `shared` kernel, `identity` module (auth, JWT, body stats)    |
+| 1     | Foundation: Maven, Docker Compose, CI, `commons` kernel, `identity` module (auth, JWT, body stats)    |
 | 2     | `food` module (catalog, nutrition, meal logging) + `fitness` module (exercises, plans, sessions)      |
 | 3     | `planning` module (goals, meal plans) + `progress` module (body metrics, daily summaries) + dashboard |
 | 4     | `insight` module (rule engine, weekly scheduled job) + frontend insights feed                         |
@@ -186,9 +184,6 @@ Cross-module calls go through published port interfaces only — no direct repos
 fitops/
 ├── fitops-backend/          # Spring Boot application (Gradle)
 ├── frontend/                # React + Vite (Phase 2)
-├── docs/
-│   ├── system-design.md     # Full architecture document
-│   └── adr/                 # Architecture Decision Records
 ├── docker-compose.yml
 └── README.md
 ```
