@@ -144,7 +144,7 @@ Frontend runs at `http://localhost:5173`. API requests are proxied to `localhost
 - `2xx` responses return the resource, page, or command result directly.
 - `4xx`/`5xx` responses return RFC 7807 `ProblemDetail` with a stable `errorCode` field.
 
-See the [error code catalog](docs/system-design.md#26-error-code-catalog) and Swagger UI for full endpoint
+See the Swagger UI for full endpoint
 documentation.
 
 ---
