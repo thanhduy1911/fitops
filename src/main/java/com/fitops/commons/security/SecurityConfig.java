@@ -18,7 +18,7 @@ public class SecurityConfig {
   // TODO(identity): add JWT filter, AuthenticationProvider, and PasswordEncoder, and
   // exceptionHandling with ProblemDetail entry point
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  public SecurityFilterChain securityFilterChain(HttpSecurity http) {
     return http.csrf(AbstractHttpConfigurer::disable)
         .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
