@@ -9,6 +9,7 @@ import org.springframework.boot.resttestclient.TestRestTemplate;
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.annotation.Order;
@@ -19,6 +20,9 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.ObjectMapper;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -27,9 +31,13 @@ import tools.jackson.databind.ObjectMapper;
   PaginatedResultIntegrationTest.TestSecurityConfig.class
 })
 @AutoConfigureTestRestTemplate
+@Testcontainers
 class PaginatedResultIntegrationTest {
   @Autowired private TestRestTemplate restTemplate;
   @Autowired private ObjectMapper objectMapper;
+
+  @Container @ServiceConnection
+  static PostgreSQLContainer postgreSQLContainer = new PostgreSQLContainer("postgres:18-alpine");
 
   @Test
   void listEndPoint_returnsJson_withCorrectPaginationFields() {
