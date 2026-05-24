@@ -61,15 +61,13 @@ public class JwtService {
   }
 
   private Set<String> extractRoles(Claims claims) {
-    var raw = claims.get(ROLES_CLAIM);
+    Object raw = claims.get(ROLES_CLAIM);
     if (raw instanceof List<?> list) {
       Set<String> out = new HashSet<>(list.size());
-      for (var object : list) {
-        if (object instanceof String string) {
-          out.add(string);
-        }
-        return out;
+      for (Object o : list) {
+        if (o instanceof String s) out.add(s);
       }
+      return out;
     }
     return Set.of();
   }
