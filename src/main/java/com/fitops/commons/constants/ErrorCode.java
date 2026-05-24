@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ErrorCode {
   GENERAL_001(HttpStatus.BAD_REQUEST, "Validation error"),
-  GENERAL_002(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error");
+  GENERAL_002(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error"),
+  AUTH_001(HttpStatus.UNAUTHORIZED, "Authentication required"),
+  ;
 
   private final HttpStatus status;
   private final String title;
