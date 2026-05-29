@@ -18,7 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableConfigurationProperties({JwtProperties.class, CorsProperties.class})
-public class SecurityConfig {
+public class SecurityConfiguration {
   private static final String[] PUBLIC_PATHS = {
     "/actuator/health",
     "/v3/api-docs/**",

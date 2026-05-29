@@ -12,13 +12,13 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Component
-public class JwtAuthFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private static final String AUTH_HEADER = "Authorization";
   private static final String BEARER_PREFIX = "Bearer ";
 
   private final JwtService jwtService;
 
-  public JwtAuthFilter(JwtService jwtService) {
+  public JwtAuthenticationFilter(JwtService jwtService) {
     this.jwtService = jwtService;
   }
 
@@ -41,8 +41,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                           principal.userId(), null, principal.authorities());
                   SecurityContextHolder.getContext().setAuthentication(auth);
                 });
-        filterChain.doFilter(request, response);
       }
+      filterChain.doFilter(request, response);
     } finally {
       SecurityContextHolder.clearContext();
     }
