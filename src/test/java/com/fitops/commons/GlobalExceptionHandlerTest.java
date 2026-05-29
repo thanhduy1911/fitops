@@ -9,6 +9,7 @@ import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.constants.MDCConstant;
 import com.fitops.commons.exception.FitOpsException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
+import com.fitops.commons.security.JwtService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.AfterEach;
@@ -22,6 +23,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,6 +39,7 @@ public class GlobalExceptionHandlerTest {
   private static final String REQUEST_ID = "request-id-1";
 
   @Autowired MockMvc mockMvc;
+  @MockitoBean JwtService jwtService;
 
   @BeforeEach
   void setMdc() {

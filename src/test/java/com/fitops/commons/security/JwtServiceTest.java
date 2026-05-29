@@ -1,10 +1,7 @@
-package com.fitops.security;
+package com.fitops.commons.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fitops.commons.security.JwtPrincipal;
-import com.fitops.commons.security.JwtProperties;
-import com.fitops.commons.security.JwtService;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
