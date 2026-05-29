@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -31,6 +32,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<ProblemDetail> handleFitOpsException(FitOpsException exception) {
     logger.warn("FitOpsException [{}]: {}", exception.getErrorCode(), exception.getMessage());
     return buildResponse(exception.getErrorCode(), exception.getMessage());
+  }
+
+  @ExceptionHandler(AuthenticationException.class)
+  public ResponseEntity<ProblemDetail> handleAuthenticationException(
+      AuthenticationException exception) {
+    logger.debug("Authentication failed: {}", exception.getClass().getSimpleName());
+    return buildResponse(ErrorCode.AUTH_001, "Authentication required");
   }
 
   @ExceptionHandler(Exception.class)
