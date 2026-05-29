@@ -3,6 +3,7 @@ package com.fitops.commons.security;
 import com.fitops.commons.constants.ServiceHeader;
 import java.util.List;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -32,7 +33,7 @@ public class SecurityConfiguration {
   @SuppressWarnings("RedundantThrows")
   public SecurityFilterChain securityFilterChain(
       HttpSecurity http,
-      JwtAuthFilter jwtAuthFilter,
+      JwtAuthenticationFilter jwtAuthenticationFilter,
       JwtAuthenticationEntryPoint entryPoint,
       CorsConfigurationSource corsConfigurationSource)
       throws Exception {
@@ -43,7 +44,7 @@ public class SecurityConfiguration {
         .authorizeHttpRequests(
             auth -> auth.requestMatchers(PUBLIC_PATHS).permitAll().anyRequest().authenticated())
         .exceptionHandling(exception -> exception.authenticationEntryPoint(entryPoint))
-        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
 
@@ -61,5 +62,14 @@ public class SecurityConfiguration {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", cfg);
     return source;
+  }
+
+  // avoid double-registration
+  @Bean
+  public FilterRegistrationBean<JwtAuthenticationFilter> registration(
+      JwtAuthenticationFilter filter) {
+    var registration = new FilterRegistrationBean<>(filter);
+    registration.setEnabled(false);
+    return registration;
   }
 }
