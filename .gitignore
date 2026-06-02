@@ -41,6 +41,7 @@ build/
 .claude/worktrees/
 .worktrees/
 CLAUDE.md
+CONTEXT.md
 
 node-modules/
 /build/
