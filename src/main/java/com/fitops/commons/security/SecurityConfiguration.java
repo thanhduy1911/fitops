@@ -10,6 +10,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -18,7 +20,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
-@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class})
+@EnableConfigurationProperties({
+  JwtProperties.class,
+  CorsProperties.class,
+  PasswordProperties.class
+})
 public class SecurityConfiguration {
   private static final String[] PUBLIC_PATHS = {
     "/actuator/health",
@@ -71,5 +77,10 @@ public class SecurityConfiguration {
     var registration = new FilterRegistrationBean<>(filter);
     registration.setEnabled(false);
     return registration;
+  }
+
+  @Bean
+  public PasswordEncoder passwordEncoder(PasswordProperties props) {
+    return new BCryptPasswordEncoder(props.bcryptStrength());
   }
 }
