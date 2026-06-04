@@ -9,7 +9,7 @@ import org.hibernate.annotations.DynamicInsert;
 
 @Entity
 @Table(schema = "identity", name = "users")
-@DynamicInsert // to insert the default language (vi) to db
+@DynamicInsert // lets unset nullable columns fall back to DB defaults
 @Getter
 @Setter
 @Builder
@@ -18,7 +18,6 @@ import org.hibernate.annotations.DynamicInsert;
 @ToString(onlyExplicitlyIncluded = true)
 public class User extends BaseEntity {
 
-  @ToString.Include
   @Column(name = "email", nullable = false, unique = true)
   private String email;
 
@@ -35,8 +34,9 @@ public class User extends BaseEntity {
   @Column(name = "avatar_url")
   private String avatarUrl;
 
+  @Builder.Default
   @Column(name = "language", nullable = false)
-  private String language;
+  private String language = "vi";
 
   @Builder.Default
   @Column(name = "is_active", nullable = false)
