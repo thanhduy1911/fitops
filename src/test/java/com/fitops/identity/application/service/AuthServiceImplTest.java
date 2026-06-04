@@ -136,4 +136,35 @@ class AuthServiceImplTest {
     verify(applicationEventPublisher, never()).publishEvent(any());
     verifyNoInteractions(jwtService);
   }
+
+  @Test
+  @DisplayName("Unknown constraint should rethrow original error")
+  void register_UnknownConstraint_rethrowsOriginal() {
+    var roleUser = mock(Role.class);
+    when(userRepository.existsByEmail("joe.doe@fitops.com")).thenReturn(false);
+    when(userRepository.existsByUsernameIgnoreCase("John.Doe123")).thenReturn(false);
+    when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+    when(passwordEncoder.encode("password123")).thenReturn("hashedPw");
+    var cve = mock(ConstraintViolationException.class);
+    when(cve.getConstraintName()).thenReturn("some_unrelate_constraint");
+    when(userRepository.saveAndFlush(any()))
+        .thenThrow(new DataIntegrityViolationException("Internal Error", cve));
+    assertThatThrownBy(() -> authServiceImpl.register(registerRequest))
+        .isInstanceOf(DataIntegrityViolationException.class);
+    verify(applicationEventPublisher, never()).publishEvent(any());
+  }
+
+  @Test
+  @DisplayName("Missing ROLE_USER seed should throw IllegalStateException")
+  void register_MissingRoleUserSeed_throwsIllegalStateException() {
+    when(userRepository.existsByEmail("joe.doe@fitops.com")).thenReturn(false);
+    when(userRepository.existsByUsernameIgnoreCase("John.Doe123")).thenReturn(false);
+    when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> authServiceImpl.register(registerRequest))
+        .isInstanceOf(IllegalStateException.class);
+
+    verify(passwordEncoder, never()).encode(any());
+    verify(userRepository, never()).saveAndFlush(any());
+  }
 }

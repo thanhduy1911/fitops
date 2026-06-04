@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.constants.MDCConstant;
+import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.FitOpsException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
 import com.fitops.commons.security.JwtService;
@@ -93,6 +94,16 @@ public class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.requestId").value(REQUEST_ID));
   }
 
+  @Test
+  void conflictException_returns409_withErrorCode() throws Exception {
+    mockMvc
+        .perform(get("/test/throw-conflict"))
+        .andExpect(status().isConflict())
+        .andExpect(jsonPath("$.errorCode").value("AUTH_004"))
+        .andExpect(jsonPath("$.title").value("Email already registered"))
+        .andExpect(jsonPath("$.requestId").value(REQUEST_ID));
+  }
+
   @RestController
   @RequestMapping("/test")
   static class TestController {
@@ -110,6 +121,11 @@ public class GlobalExceptionHandlerTest {
     @GetMapping("/throw-runtime")
     void throwRuntime() {
       throw new RuntimeException("Something went wrong");
+    }
+
+    @GetMapping("/throw-conflict")
+    void throwConflict() {
+      throw new ConflictException(ErrorCode.AUTH_004, "Email already registered");
     }
   }
 
