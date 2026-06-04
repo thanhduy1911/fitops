@@ -23,7 +23,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 @EnableConfigurationProperties({
   JwtProperties.class,
   CorsProperties.class,
-  PasswordProperties.class
+  PasswordProperties.class,
+  RefreshTokenProperties.class
 })
 public class SecurityConfiguration {
   private static final String[] PUBLIC_PATHS = {
