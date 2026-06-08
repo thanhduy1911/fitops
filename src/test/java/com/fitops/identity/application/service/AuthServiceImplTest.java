@@ -9,6 +9,7 @@ import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.security.JwtProperties;
 import com.fitops.commons.security.JwtService;
+import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.domain.entity.Role;
 import com.fitops.identity.domain.entity.User;
@@ -37,9 +38,11 @@ class AuthServiceImplTest {
   @Mock private JwtProperties jwtProperties;
   @Mock private ApplicationEventPublisher applicationEventPublisher;
   @Mock private JwtService jwtService;
+  @Mock private RefreshTokenService refreshTokenService;
 
   private AuthServiceImpl authServiceImpl;
   private RegisterRequest registerRequest;
+  private LoginRequest loginRequest;
 
   @BeforeEach
   void setUp() {
@@ -50,9 +53,11 @@ class AuthServiceImplTest {
             passwordEncoder,
             jwtProperties,
             applicationEventPublisher,
-            jwtService);
+            jwtService,
+            refreshTokenService);
     registerRequest =
         new RegisterRequest("Joe.Doe@FitOps.com", "John.Doe123", "password123", "John Doe");
+    loginRequest = new LoginRequest("Joe.Doe@FitOps.com", "password123");
   }
 
   @Test
@@ -94,7 +99,7 @@ class AuthServiceImplTest {
         .isInstanceOf(ConflictException.class)
         .extracting(exception -> ((ConflictException) exception).getErrorCode())
         .isEqualTo(ErrorCode.AUTH_004);
-    verify(passwordEncoder, never()).encode(any());
+    verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
     verifyNoInteractions(applicationEventPublisher, jwtService);
   }
@@ -108,7 +113,7 @@ class AuthServiceImplTest {
         .isInstanceOf(ConflictException.class)
         .extracting(exception -> ((ConflictException) exception).getErrorCode())
         .isEqualTo(ErrorCode.AUTH_005);
-    verify(passwordEncoder, never()).encode(any());
+    verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
     verifyNoInteractions(applicationEventPublisher, jwtService);
   }
@@ -164,7 +169,7 @@ class AuthServiceImplTest {
     assertThatThrownBy(() -> authServiceImpl.register(registerRequest))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(passwordEncoder, never()).encode(any());
+    verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
   }
 }

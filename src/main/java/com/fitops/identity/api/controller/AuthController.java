@@ -42,6 +42,6 @@ public class AuthController {
             .build();
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, cookie.toString())
-        .body(new AuthResponse(result.accessToken(), "Bear", result.expiresIn()));
+        .body(new AuthResponse(result.accessToken(), "Bearer", result.expiresIn()));
   }
 }

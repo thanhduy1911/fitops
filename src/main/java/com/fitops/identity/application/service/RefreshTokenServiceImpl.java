@@ -41,7 +41,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             .tokenHash(sha256Hex(rawToken))
             .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plus(refreshTokenProperties.ttl()))
             .build());
-    return "";
+    return rawToken;
   }
 
   private static String sha256Hex(String rawToken) {
