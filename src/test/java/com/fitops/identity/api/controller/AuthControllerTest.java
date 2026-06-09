@@ -18,12 +18,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.security.autoconfigure.SecurityAutoConfiguration;
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -36,7 +35,8 @@ import org.springframework.test.web.servlet.MockMvc;
       UserDetailsServiceAutoConfiguration.class
     })
 @AutoConfigureMockMvc(addFilters = false)
-@Import({GlobalExceptionHandler.class, AuthController.class, AuthControllerTest.Props.class})
+@EnableConfigurationProperties(RefreshTokenProperties.class)
+@Import({GlobalExceptionHandler.class, AuthController.class})
 class AuthControllerTest {
   @Autowired private MockMvc mockMvc;
   @MockitoBean AuthService authService;
@@ -130,15 +130,5 @@ class AuthControllerTest {
                       """))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
-  }
-
-  // === Configuration ===
-
-  @TestConfiguration
-  static class Props {
-    @Bean
-    RefreshTokenProperties refreshTokenProperties() {
-      return new RefreshTokenProperties(Duration.ofDays(7), "refreshToken", "/api/v1/auth", true);
-    }
   }
 }
