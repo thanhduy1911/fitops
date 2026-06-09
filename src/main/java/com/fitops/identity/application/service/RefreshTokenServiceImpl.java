@@ -11,7 +11,9 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +44,39 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plus(refreshTokenProperties.ttl()))
             .build());
     return rawToken;
+  }
+
+  @Override
+  @Transactional
+  public Optional<UUID> rotate(String rawToken) {
+    if (StringUtils.isBlank(rawToken)) {
+      return Optional.empty();
+    }
+    var tokenOpt = refreshTokenRepository.findByTokenHash(sha256Hex(rawToken));
+    if (tokenOpt.isEmpty()) {
+      return Optional.empty();
+    }
+    var token = tokenOpt.get();
+    if (token.isRevoked()) {
+      refreshTokenRepository.revokeAllActiveByUserId(token.getUserId());
+      return Optional.empty();
+    }
+    if (token.getExpiresAt().isBefore(OffsetDateTime.now(ZoneOffset.UTC))) {
+      return Optional.empty();
+    }
+    token.setRevoked(true);
+    return Optional.of(token.getUserId());
+  }
+
+  @Override
+  @Transactional
+  public void revoke(String rawToken) {
+    if (StringUtils.isBlank(rawToken)) {
+      return;
+    }
+    refreshTokenRepository
+        .findByTokenHash(sha256Hex(rawToken))
+        .ifPresent(token -> token.setRevoked(true));
   }
 
   private static String sha256Hex(String rawToken) {

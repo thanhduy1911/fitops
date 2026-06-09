@@ -1,7 +1,6 @@
 package com.fitops.identity.infrastructure.persistence;
 
 import com.fitops.identity.domain.entity.User;
-
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -15,4 +14,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
   @Query("SELECT user FROM User user LEFT JOIN FETCH user.roles WHERE user.email = :email")
   Optional<User> findByEmail(@Param("email") String email);
+  @Query("SELECT user FROM User user LEFT JOIN FETCH user.roles WHERE user.id = :id")
+  Optional<User> findByIdWithRoles(@Param("id") UUID id);
 }

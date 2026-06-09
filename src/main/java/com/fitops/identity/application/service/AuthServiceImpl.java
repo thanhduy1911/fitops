@@ -21,6 +21,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -96,6 +97,7 @@ public class AuthServiceImpl implements AuthService {
   }
 
   @Override
+  @Transactional
   public LoginResult login(LoginRequest request) {
     String email = request.email().trim().toLowerCase(Locale.ROOT);
     var userOpt = userRepository.findByEmail(email);
@@ -118,6 +120,37 @@ public class AuthServiceImpl implements AuthService {
     var rawRefreshToken = refreshTokenService.issue(user.getId());
 
     return new LoginResult(accessToken, expiresIn, rawRefreshToken);
+  }
+
+  @Override
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
+  public LoginResult refresh(String rawRefreshToken) {
+    var userId =
+        refreshTokenService
+            .rotate(rawRefreshToken)
+            .orElseThrow(
+                () ->
+                    new UnauthorizedException(
+                        ErrorCode.AUTH_003, "Refresh token invalid or revoked"));
+    var user =
+        userRepository
+            .findById(userId)
+            .filter(User::isActive)
+            .orElseThrow(
+                () ->
+                    new UnauthorizedException(
+                        ErrorCode.AUTH_003, "Refresh token invalid or revoked"));
+    var roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
+    var accessToken = jwtService.generate(user.getId(), roles);
+    var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
+    var newRefreshToken = refreshTokenService.issue(userId);
+
+    return new LoginResult(accessToken, expiresIn, newRefreshToken);
+  }
+
+  @Override
+  public void logout(String rawRefreshToken) {
+    refreshTokenService.revoke(rawRefreshToken);
   }
 
   private RuntimeException mapUniqueViolation(DataIntegrityViolationException exception) {
