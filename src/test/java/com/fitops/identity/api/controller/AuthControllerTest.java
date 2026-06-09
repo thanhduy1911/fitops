@@ -12,7 +12,6 @@ import com.fitops.commons.security.RefreshTokenProperties;
 import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
 import com.fitops.identity.application.service.LoginResult;
-import java.time.Duration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @Import({GlobalExceptionHandler.class, AuthController.class})
 class AuthControllerTest {
   @Autowired private MockMvc mockMvc;
+  @Autowired private RefreshTokenProperties refreshTokenProperties;
   @MockitoBean AuthService authService;
   @MockitoBean JwtService jwtService;
 
@@ -110,12 +110,18 @@ class AuthControllerTest {
         .andExpect(jsonPath("$.accessToken").value("jwt-token"))
         .andExpect(jsonPath("$.tokenType").value("Bearer"))
         .andExpect(jsonPath("$.expiresIn").value(3600))
-        .andExpect(cookie().value("refreshToken", "raw-token"))
-        .andExpect(cookie().httpOnly("refreshToken", true))
-        .andExpect(cookie().secure("refreshToken", true))
-        .andExpect(cookie().path("refreshToken", "/api/v1/auth"))
-        .andExpect(cookie().maxAge("refreshToken", (int) Duration.ofDays(7).toSeconds()))
-        .andExpect(cookie().sameSite("refreshToken", "Strict"));
+        .andExpect(cookie().value(refreshTokenProperties.cookieName(), "raw-token"))
+        .andExpect(cookie().httpOnly(refreshTokenProperties.cookieName(), true))
+        .andExpect(
+            cookie().secure(refreshTokenProperties.cookieName(), refreshTokenProperties.secure()))
+        .andExpect(
+            cookie().path(refreshTokenProperties.cookieName(), refreshTokenProperties.cookiePath()))
+        .andExpect(
+            cookie()
+                .maxAge(
+                    refreshTokenProperties.cookieName(),
+                    (int) refreshTokenProperties.ttl().toSeconds()))
+        .andExpect(cookie().sameSite(refreshTokenProperties.cookieName(), "Strict"));
   }
 
   @Test
