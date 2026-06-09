@@ -7,8 +7,10 @@ import static org.mockito.Mockito.*;
 
 import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.exception.ConflictException;
+import com.fitops.commons.exception.UnauthorizedException;
 import com.fitops.commons.security.JwtProperties;
 import com.fitops.commons.security.JwtService;
+import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.domain.entity.Role;
 import com.fitops.identity.domain.entity.User;
@@ -17,6 +19,7 @@ import com.fitops.identity.infrastructure.persistence.RoleRepository;
 import com.fitops.identity.infrastructure.persistence.UserRepository;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import org.hibernate.exception.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -37,9 +40,11 @@ class AuthServiceImplTest {
   @Mock private JwtProperties jwtProperties;
   @Mock private ApplicationEventPublisher applicationEventPublisher;
   @Mock private JwtService jwtService;
+  @Mock private RefreshTokenService refreshTokenService;
 
   private AuthServiceImpl authServiceImpl;
   private RegisterRequest registerRequest;
+  private LoginRequest loginRequest;
 
   @BeforeEach
   void setUp() {
@@ -50,9 +55,11 @@ class AuthServiceImplTest {
             passwordEncoder,
             jwtProperties,
             applicationEventPublisher,
-            jwtService);
+            jwtService,
+            refreshTokenService);
     registerRequest =
         new RegisterRequest("Joe.Doe@FitOps.com", "John.Doe123", "password123", "John Doe");
+    loginRequest = new LoginRequest("Joe.Doe@FitOps.com", "password123");
   }
 
   @Test
@@ -94,7 +101,7 @@ class AuthServiceImplTest {
         .isInstanceOf(ConflictException.class)
         .extracting(exception -> ((ConflictException) exception).getErrorCode())
         .isEqualTo(ErrorCode.AUTH_004);
-    verify(passwordEncoder, never()).encode(any());
+    verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
     verifyNoInteractions(applicationEventPublisher, jwtService);
   }
@@ -108,7 +115,7 @@ class AuthServiceImplTest {
         .isInstanceOf(ConflictException.class)
         .extracting(exception -> ((ConflictException) exception).getErrorCode())
         .isEqualTo(ErrorCode.AUTH_005);
-    verify(passwordEncoder, never()).encode(any());
+    verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
     verifyNoInteractions(applicationEventPublisher, jwtService);
   }
@@ -164,7 +171,82 @@ class AuthServiceImplTest {
     assertThatThrownBy(() -> authServiceImpl.register(registerRequest))
         .isInstanceOf(IllegalStateException.class);
 
-    verify(passwordEncoder, never()).encode(any());
+    verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
+  }
+
+  @Test
+  @DisplayName("Login success then token carries user's REAL roles, returns LoginResult")
+  void login_success() {
+    var role = mock(Role.class);
+    when(role.getName()).thenReturn("ROLE_USER");
+    var user = User.builder().email("joe.doe@fitops.com").password("hashedPw").build();
+    user.getRoles().add(role);
+
+    when(userRepository.findByEmail("joe.doe@fitops.com")).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("password123", "hashedPw")).thenReturn(true);
+    when(jwtProperties.accessTokenTtl()).thenReturn(Duration.ofSeconds(3600));
+    when(jwtService.generate(any(), any())).thenReturn("jwt");
+    when(refreshTokenService.issue(user.getId())).thenReturn("raw");
+
+    var result = authServiceImpl.login(loginRequest);
+
+    assertThat(result.accessToken()).isEqualTo("jwt");
+    assertThat(result.expiresIn()).isEqualTo(3600L);
+    assertThat(result.rawRefreshToken()).isEqualTo("raw");
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<Set<String>> rolesCaptor = ArgumentCaptor.forClass(Set.class);
+    verify(jwtService).generate(eq(user.getId()), rolesCaptor.capture());
+    assertThat(rolesCaptor.getValue()).containsExactly("ROLE_USER");
+  }
+
+  @Test
+  @DisplayName("Wrong password throws AUTH_007. No refresh issued, no token minted")
+  void login_wrongPassword_throwsAuth007() {
+    var user = User.builder().email("joe.doe@fitops.com").password("hashedPw").build();
+    when(userRepository.findByEmail("joe.doe@fitops.com")).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("password123", "hashedPw")).thenReturn(false);
+
+    assertThatThrownBy(() -> authServiceImpl.login(loginRequest))
+        .isInstanceOf(UnauthorizedException.class)
+        .extracting(e -> ((UnauthorizedException) e).getErrorCode())
+        .isEqualTo(ErrorCode.AUTH_007);
+
+    verify(refreshTokenService, never()).issue(any());
+    verifyNoInteractions(jwtService);
+  }
+
+  @Test
+  @DisplayName("Unknown email throws AUTH_007. Decoy BCrypt ran (constant-time), no refresh issued")
+  void login_unknownEmail_throwsAuth007_afterDecoy() {
+    when(userRepository.findByEmail("joe.doe@fitops.com")).thenReturn(Optional.empty());
+
+    assertThatThrownBy(() -> authServiceImpl.login(loginRequest))
+        .isInstanceOf(UnauthorizedException.class)
+        .extracting(e -> ((UnauthorizedException) e).getErrorCode())
+        .isEqualTo(ErrorCode.AUTH_007);
+
+    verify(passwordEncoder).matches(eq("password123"), any());
+    verify(refreshTokenService, never()).issue(any());
+    verifyNoInteractions(jwtService);
+  }
+
+  @Test
+  @DisplayName(
+      "Deactivated user (correct password) throws AUTH_007, Indistinguishable from wrong pw")
+  void login_deactivated_throwsAuth007() {
+    var user = User.builder().email("joe.doe@fitops.com").password("hashedPw").build();
+    user.setActive(false);
+    when(userRepository.findByEmail("joe.doe@fitops.com")).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("password123", "hashedPw")).thenReturn(true);
+
+    assertThatThrownBy(() -> authServiceImpl.login(loginRequest))
+        .isInstanceOf(UnauthorizedException.class)
+        .extracting(e -> ((UnauthorizedException) e).getErrorCode())
+        .isEqualTo(ErrorCode.AUTH_007);
+
+    verify(refreshTokenService, never()).issue(any());
+    verifyNoInteractions(jwtService);
   }
 }
