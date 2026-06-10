@@ -134,7 +134,7 @@ public class AuthServiceImpl implements AuthService {
                         ErrorCode.AUTH_003, "Refresh token invalid or revoked"));
     var user =
         userRepository
-            .findById(userId)
+            .findByIdWithRoles(userId)
             .filter(User::isActive)
             .orElseThrow(
                 () ->

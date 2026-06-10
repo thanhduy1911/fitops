@@ -43,7 +43,12 @@ class AuthRefreshIntegrationTest {
   static PostgreSQLContainer postgres =
       new PostgreSQLContainer("postgres:18-alpine").withReuse(true);
 
+  @org.springframework.beans.factory.annotation.Value(
+      "${fitops.security.refresh-token.cookie-name}")
+  String cookieName;
+
   @Autowired MockMvc mockMvc;
+
   @Autowired UserRepository userRepository;
   @Autowired RefreshTokenRepository refreshTokenRepository;
   @Autowired ObjectMapper objectMapper;
@@ -57,10 +62,10 @@ class AuthRefreshIntegrationTest {
             .perform(post("/api/v1/auth/refresh").cookie(cookieA))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.accessToken").isNotEmpty())
-            .andExpect(cookie().exists("refreshToken"))
+            .andExpect(cookie().exists(cookieName))
             .andReturn()
             .getResponse();
-    var cookieB = refreshResponse.getCookie("refreshToken");
+    var cookieB = refreshResponse.getCookie(cookieName);
     assert cookieB != null;
     assertThat(cookieB.getValue()).isNotEqualTo(cookieA.getValue());
 
@@ -87,7 +92,7 @@ class AuthRefreshIntegrationTest {
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
-            .getCookie("refreshToken");
+            .getCookie(cookieName);
     mockMvc
         .perform(post("/api/v1/auth/refresh").cookie(Objects.requireNonNull(cookieB)))
         .andExpect(status().isOk()); // -> cookieC active; A,B revoked
@@ -112,8 +117,7 @@ class AuthRefreshIntegrationTest {
             .andExpect(status().isOk())
             .andReturn()
             .getResponse();
-    assertThat(Objects.requireNonNull(logoutResponse.getCookie("refreshToken")).getMaxAge())
-        .isZero();
+    assertThat(Objects.requireNonNull(logoutResponse.getCookie(cookieName)).getMaxAge()).isZero();
 
     mockMvc
         .perform(post("/api/v1/auth/refresh").cookie(cookieA))
@@ -126,7 +130,7 @@ class AuthRefreshIntegrationTest {
     mockMvc
         .perform(post("/api/v1/auth/logout"))
         .andExpect(status().isOk())
-        .andExpect(cookie().maxAge("refreshToken", 0));
+        .andExpect(cookie().maxAge(cookieName, 0));
   }
 
   @Test
@@ -142,7 +146,7 @@ class AuthRefreshIntegrationTest {
             .build());
 
     mockMvc
-        .perform(post("/api/v1/auth/refresh").cookie(new Cookie("refreshToken", raw)))
+        .perform(post("/api/v1/auth/refresh").cookie(new Cookie(cookieName, raw)))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.errorCode").value("AUTH_003"));
   }
@@ -203,7 +207,7 @@ class AuthRefreshIntegrationTest {
             .andExpect(status().isOk())
             .andReturn()
             .getResponse();
-    return response.getCookie("refreshToken");
+    return response.getCookie(cookieName);
   }
 
   private static String sha256Hex(String value) throws Exception {
