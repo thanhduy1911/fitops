@@ -1,8 +1,10 @@
 package com.fitops.identity.api.controller;
 
 import com.fitops.commons.security.RefreshTokenProperties;
+import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
+import com.fitops.identity.api.request.ResetPasswordRequest;
 import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
 import jakarta.validation.Valid;
@@ -60,6 +62,18 @@ public class AuthController {
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, refreshCookie("", Duration.ZERO).toString())
         .build();
+  }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<Void> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    authService.forgotPassword(request);
+    return ResponseEntity.ok().build();
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    authService.resetPassword(request);
+    return ResponseEntity.ok().build();
   }
 
   private ResponseCookie refreshCookie(String value, Duration maxAge) {

@@ -14,6 +14,7 @@ public enum ErrorCode {
   AUTH_004(HttpStatus.CONFLICT, "Email already registered"),
   AUTH_005(HttpStatus.CONFLICT, "Username already taken"),
   AUTH_007(HttpStatus.UNAUTHORIZED, "Invalid credentials"),
+  AUTH_009(HttpStatus.BAD_REQUEST, "Password reset token invalid or expired"),
   ;
 
   private final HttpStatus status;
