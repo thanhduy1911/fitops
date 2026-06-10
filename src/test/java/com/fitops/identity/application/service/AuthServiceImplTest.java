@@ -12,6 +12,7 @@ import com.fitops.commons.security.JwtProperties;
 import com.fitops.commons.security.JwtService;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
+import com.fitops.identity.application.port.PasswordResetMailer;
 import com.fitops.identity.domain.entity.Role;
 import com.fitops.identity.domain.entity.User;
 import com.fitops.identity.domain.event.UserRegisteredEvent;
@@ -41,6 +42,8 @@ class AuthServiceImplTest {
   @Mock private ApplicationEventPublisher applicationEventPublisher;
   @Mock private JwtService jwtService;
   @Mock private RefreshTokenService refreshTokenService;
+  @Mock private PasswordResetService passwordResetService;
+  @Mock private PasswordResetMailer passwordResetMailer;
 
   private AuthServiceImpl authServiceImpl;
   private RegisterRequest registerRequest;
@@ -56,7 +59,9 @@ class AuthServiceImplTest {
             jwtProperties,
             applicationEventPublisher,
             jwtService,
-            refreshTokenService);
+            refreshTokenService,
+            passwordResetService,
+            passwordResetMailer);
     registerRequest =
         new RegisterRequest("Joe.Doe@FitOps.com", "John.Doe123", "password123", "John Doe");
     loginRequest = new LoginRequest("Joe.Doe@FitOps.com", "password123");

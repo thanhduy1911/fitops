@@ -1,16 +1,13 @@
 package com.fitops.identity.application.service;
 
+import static com.fitops.commons.security.OpaqueTokens.sha256Hex;
+
+import com.fitops.commons.security.OpaqueTokens;
 import com.fitops.commons.security.RefreshTokenProperties;
 import com.fitops.identity.domain.entity.RefreshToken;
 import com.fitops.identity.infrastructure.persistence.RefreshTokenRepository;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
@@ -19,29 +16,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class RefreshTokenServiceImpl implements RefreshTokenService {
-  private static final int TOKEN_BYTES = 32; // 256 bits
   private final RefreshTokenRepository refreshTokenRepository;
   private final RefreshTokenProperties refreshTokenProperties;
-  private final SecureRandom secureRandom = new SecureRandom();
+  private final Clock clock;
 
   public RefreshTokenServiceImpl(
       RefreshTokenRepository refreshTokenRepository,
-      RefreshTokenProperties refreshTokenProperties) {
+      RefreshTokenProperties refreshTokenProperties,
+      Clock clock) {
     this.refreshTokenRepository = refreshTokenRepository;
     this.refreshTokenProperties = refreshTokenProperties;
+    this.clock = clock;
   }
 
   @Override
   @Transactional
   public String issue(UUID userId) {
-    byte[] raw = new byte[TOKEN_BYTES];
-    secureRandom.nextBytes(raw);
-    String rawToken = Base64.getUrlEncoder().withoutPadding().encodeToString(raw);
+    String rawToken = OpaqueTokens.generate();
     refreshTokenRepository.save(
         RefreshToken.builder()
             .userId(userId)
             .tokenHash(sha256Hex(rawToken))
-            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plus(refreshTokenProperties.ttl()))
+            .expiresAt(OffsetDateTime.now(clock).plus(refreshTokenProperties.ttl()))
             .build());
     return rawToken;
   }
@@ -61,7 +57,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
       refreshTokenRepository.revokeAllActiveByUserId(token.getUserId());
       return Optional.empty();
     }
-    if (token.getExpiresAt().isBefore(OffsetDateTime.now(ZoneOffset.UTC))) {
+    if (token.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
       return Optional.empty();
     }
     token.setRevoked(true);
@@ -79,12 +75,9 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         .ifPresent(token -> token.setRevoked(true));
   }
 
-  private static String sha256Hex(String rawToken) {
-    try {
-      MessageDigest digest = MessageDigest.getInstance("SHA-256");
-      return HexFormat.of().formatHex(digest.digest(rawToken.getBytes(StandardCharsets.UTF_8)));
-    } catch (NoSuchAlgorithmException exception) {
-      throw new IllegalStateException("SHA-256 unavailable", exception);
-    }
+  @Override
+  @Transactional
+  public void revokeAllForUser(UUID userId) {
+    refreshTokenRepository.revokeAllActiveByUserId(userId);
   }
 }

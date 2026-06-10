@@ -1,13 +1,17 @@
 package com.fitops.identity.application.service;
 
 import com.fitops.commons.constants.ErrorCode;
+import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.UnauthorizedException;
 import com.fitops.commons.security.JwtProperties;
 import com.fitops.commons.security.JwtService;
+import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
+import com.fitops.identity.api.request.ResetPasswordRequest;
 import com.fitops.identity.api.response.AuthResponse;
+import com.fitops.identity.application.port.PasswordResetMailer;
 import com.fitops.identity.domain.entity.Role;
 import com.fitops.identity.domain.entity.User;
 import com.fitops.identity.domain.event.UserRegisteredEvent;
@@ -38,6 +42,8 @@ public class AuthServiceImpl implements AuthService {
   private final ApplicationEventPublisher applicationEventPublisher;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
+  private final PasswordResetService passwordResetService;
+  private final PasswordResetMailer passwordResetMailer;
 
   public AuthServiceImpl(
       UserRepository userRepository,
@@ -46,7 +52,9 @@ public class AuthServiceImpl implements AuthService {
       JwtProperties jwtProperties,
       ApplicationEventPublisher applicationEventPublisher,
       JwtService jwtService,
-      RefreshTokenService refreshTokenService) {
+      RefreshTokenService refreshTokenService,
+      PasswordResetService passwordResetService,
+      PasswordResetMailer passwordResetMailer) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
@@ -55,6 +63,8 @@ public class AuthServiceImpl implements AuthService {
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
     this.dummyHash = passwordEncoder.encode(DUMMY_RAW_TOKEN);
+    this.passwordResetService = passwordResetService;
+    this.passwordResetMailer = passwordResetMailer;
   }
 
   @Override
@@ -152,6 +162,42 @@ public class AuthServiceImpl implements AuthService {
   @Transactional
   public void logout(String rawRefreshToken) {
     refreshTokenService.revoke(rawRefreshToken);
+  }
+
+  @Override
+  @Transactional
+  public void forgotPassword(ForgotPasswordRequest request) {
+    var email = request.email().trim().toLowerCase(Locale.ROOT);
+    userRepository
+        .findByEmail(email)
+        .filter(User::isActive)
+        .ifPresent(
+            user -> {
+              var issued = passwordResetService.issue(user.getId());
+              passwordResetMailer.sendResetLink(
+                  user.getEmail(), issued.rawToken(), issued.expiresAt());
+            });
+  }
+
+  @Override
+  @Transactional
+  public void resetPassword(ResetPasswordRequest request) {
+    var userId =
+        passwordResetService
+            .consume(request.token())
+            .orElseThrow(
+                () ->
+                    new BadRequestException(
+                        ErrorCode.AUTH_009, "Password reset token invalid or expired"));
+    var user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(
+                () ->
+                    new BadRequestException(
+                        ErrorCode.AUTH_009, "Password reset token invalid or expired"));
+    user.setPassword(passwordEncoder.encode(request.newPassword()));
+    refreshTokenService.revokeAllForUser(userId);
   }
 
   private RuntimeException mapUniqueViolation(DataIntegrityViolationException exception) {

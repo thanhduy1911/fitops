@@ -9,4 +9,6 @@ public interface RefreshTokenService {
   Optional<UUID> rotate(String rawToken);
 
   void revoke(String rawToken);
+
+  void revokeAllForUser(UUID userId);
 }
