@@ -2,8 +2,8 @@ package com.fitops.identity.application.service;
 
 import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import com.fitops.commons.security.RefreshTokenProperties;
 import com.fitops.identity.domain.entity.RefreshToken;
@@ -15,6 +15,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,112 @@ class RefreshTokenServiceImplTest {
     assertThat(saved.isRevoked()).isFalse();
     assertThat(saved.getExpiresAt())
         .isCloseTo(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7), within(5, ChronoUnit.SECONDS));
+  }
+
+  @Test
+  @DisplayName("rotate() valid token -> marks old revoked, returns userId")
+  void rotate_valid_revokesOld_returnsUserId() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+    var userId = UUID.randomUUID();
+    var token =
+        RefreshToken.builder()
+            .userId(userId)
+            .tokenHash("hash")
+            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7))
+            .build();
+    when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+
+    var result = service.rotate("raw-token");
+
+    assertThat(result.isPresent()).isTrue();
+    // already checked
+    //noinspection OptionalGetWithoutIsPresent
+    assertThat(result.get()).isEqualTo(userId);
+    assertThat(token.isRevoked()).isTrue();
+    verify(refreshTokenRepository, never()).revokeAllActiveByUserId(any());
+  }
+
+  @Test
+  @DisplayName("rotate() reuse of a revoked token -> revokes the whole family, returns empty")
+  void rotate_reuseRevoked_revokesAll_returnsEmpty() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+    var userId = UUID.randomUUID();
+    var revoked =
+        RefreshToken.builder()
+            .userId(userId)
+            .tokenHash("hash")
+            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7))
+            .revoked(true)
+            .build();
+    when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(revoked));
+
+    var result = service.rotate("raw-token");
+
+    assertThat(result.isEmpty()).isTrue();
+    verify(refreshTokenRepository).revokeAllActiveByUserId(userId);
+  }
+
+  @Test
+  @DisplayName("rotate() expired token -> returns empty, no rotation, no family revoke")
+  void rotate_expired_returnsEmpty() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+    var token =
+        RefreshToken.builder()
+            .userId(UUID.randomUUID())
+            .tokenHash("hash")
+            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).minusSeconds(1))
+            .build();
+    when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+
+    var result = service.rotate("raw-token");
+
+    assertThat(result.isEmpty()).isTrue();
+    assertThat(token.isRevoked()).isFalse();
+    verify(refreshTokenRepository, never()).revokeAllActiveByUserId(any());
+  }
+
+  @Test
+  @DisplayName("rotate() unknown hash -> empty")
+  void rotate_unknown_returnsEmpty() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+    when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.empty());
+
+    assertThat(service.rotate("raw-token").isEmpty()).isTrue();
+  }
+
+  @Test
+  @DisplayName("rotate() blank input -> empty, never touches the repository")
+  void rotate_blank_returnsEmpty() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+
+    assertThat(service.rotate("   ").isEmpty()).isTrue();
+    verifyNoInteractions(refreshTokenRepository);
+  }
+
+  @Test
+  @DisplayName("revoke() present token -> sets revoked=true")
+  void revoke_present_setsRevoked() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+    var token =
+        RefreshToken.builder()
+            .userId(UUID.randomUUID())
+            .tokenHash("hash")
+            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7))
+            .build();
+    when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
+
+    service.revoke("raw-token");
+
+    assertThat(token.isRevoked()).isTrue();
+  }
+
+  @Test
+  @DisplayName("revoke() unknown token -> no-op, no exception")
+  void revoke_unknown_noop() {
+    var service = new RefreshTokenServiceImpl(refreshTokenRepository, refreshTokenProperties);
+    when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.empty());
+
+    service.revoke("raw-token"); // must not throw
   }
 
   private static String sha256Hex(String value) throws Exception {
