@@ -1,6 +1,5 @@
 package com.fitops.identity.application.service;
 
-import static org.assertj.core.api.Assertions.within;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -11,7 +10,6 @@ import com.fitops.identity.infrastructure.persistence.RefreshTokenRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.*;
-import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class RefreshTokenServiceImplTest {
   @Mock private RefreshTokenRepository refreshTokenRepository;
   @Mock private RefreshTokenProperties refreshTokenProperties;
-  @Mock private Clock clock = Clock.fixed(Instant.parse("2026-06-10T12:00:00Z"), ZoneOffset.UTC);
+  private final Clock clock = Clock.fixed(Instant.parse("2026-06-10T12:00:00Z"), ZoneOffset.UTC);
 
   @Test
   @DisplayName(
@@ -52,8 +50,7 @@ class RefreshTokenServiceImplTest {
 
     assertThat(saved.getUserId()).isEqualTo(userId);
     assertThat(saved.isRevoked()).isFalse();
-    assertThat(saved.getExpiresAt())
-        .isCloseTo(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7), within(5, ChronoUnit.SECONDS));
+    assertThat(saved.getExpiresAt()).isEqualTo(OffsetDateTime.now(clock).plusDays(7));
   }
 
   @Test
@@ -73,7 +70,6 @@ class RefreshTokenServiceImplTest {
     var result = service.rotate("raw-token");
 
     assertThat(result.isPresent()).isTrue();
-    // already checked
     //noinspection OptionalGetWithoutIsPresent
     assertThat(result.get()).isEqualTo(userId);
     assertThat(token.isRevoked()).isTrue();
