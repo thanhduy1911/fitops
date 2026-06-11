@@ -29,7 +29,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
   @Transactional
   public IssuedResetToken issue(UUID userId) {
     var now = OffsetDateTime.now(clock);
-    repository.consumeAllActiveByUserId(userId, now); // one live link at a time
+    repository.consumeAllActiveByUserId(userId, now);
     var rawToken = OpaqueTokens.generate();
     var expiresAt = now.plus(properties.ttl());
     repository.save(
@@ -54,12 +54,13 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     }
     var token = tokenOpt.get();
     if (token.getConsumedAt() != null) {
-      return Optional.empty(); // already use
-    }
-    if (token.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
       return Optional.empty();
     }
-    token.setConsumedAt(OffsetDateTime.now(clock));
+    var now = OffsetDateTime.now(clock);
+    if (!token.getExpiresAt().isAfter(now)) {
+      return Optional.empty();
+    }
+    token.setConsumedAt(now);
     return Optional.of(token.getUserId());
   }
 }

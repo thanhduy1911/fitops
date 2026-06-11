@@ -63,7 +63,7 @@ class RefreshTokenServiceImplTest {
         RefreshToken.builder()
             .userId(userId)
             .tokenHash("hash")
-            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7))
+            .expiresAt(OffsetDateTime.now(clock).plusDays(7))
             .build();
     when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 
@@ -86,7 +86,7 @@ class RefreshTokenServiceImplTest {
         RefreshToken.builder()
             .userId(userId)
             .tokenHash("hash")
-            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7))
+            .expiresAt(OffsetDateTime.now(clock).plusDays(7))
             .revoked(true)
             .build();
     when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(revoked));
@@ -146,7 +146,7 @@ class RefreshTokenServiceImplTest {
         RefreshToken.builder()
             .userId(UUID.randomUUID())
             .tokenHash("hash")
-            .expiresAt(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7))
+            .expiresAt(OffsetDateTime.now(clock).plusDays(7))
             .build();
     when(refreshTokenRepository.findByTokenHash(anyString())).thenReturn(Optional.of(token));
 

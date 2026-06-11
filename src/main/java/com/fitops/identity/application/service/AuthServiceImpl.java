@@ -192,6 +192,7 @@ public class AuthServiceImpl implements AuthService {
     var user =
         userRepository
             .findById(userId)
+            .filter(User::isActive)
             .orElseThrow(
                 () ->
                     new BadRequestException(

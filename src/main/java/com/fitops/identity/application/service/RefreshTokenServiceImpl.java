@@ -57,7 +57,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
       refreshTokenRepository.revokeAllActiveByUserId(token.getUserId());
       return Optional.empty();
     }
-    if (token.getExpiresAt().isBefore(OffsetDateTime.now(clock))) {
+    if (!token.getExpiresAt().isAfter(OffsetDateTime.now(clock))) { // expired when expiresAt <= now
       return Optional.empty();
     }
     token.setRevoked(true);
