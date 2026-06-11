@@ -155,10 +155,9 @@
         </dependency>
 
         <!-- ===== Spring Modulith ===== -->
-        <!-- spring-modulith-starter-jpa includes starter-core transitively -->
         <dependency>
             <groupId>org.springframework.modulith</groupId>
-            <artifactId>spring-modulith-starter-jpa</artifactId>
+            <artifactId>spring-modulith-starter-jdbc</artifactId>
         </dependency>
 
         <!-- ===== Mapping ===== -->
