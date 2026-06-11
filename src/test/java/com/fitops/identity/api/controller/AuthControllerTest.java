@@ -1,11 +1,14 @@
 package com.fitops.identity.api.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.constants.MDCConstant;
+import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
 import com.fitops.commons.security.JwtService;
 import com.fitops.commons.security.RefreshTokenProperties;
@@ -136,5 +139,77 @@ class AuthControllerTest {
                       """))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
+  }
+
+  @Test
+  void forgotPassword_validEmail_returns200() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"email":"joe@fitops.com"}
+                    """))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void forgotPassword_invalidEmail_returns400_general001() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/forgot-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"email":"not-an-email"}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
+  }
+
+  @Test
+  void resetPassword_validRequest_returns200() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"token":"some-raw-token","newPassword":"newpassword123"}
+                    """))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void resetPassword_weakPassword_returns400_general001() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"token":"some-raw-token","newPassword":"short"}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
+  }
+
+  @Test
+  void resetPassword_invalidToken_returns400_auth009() throws Exception {
+    doThrow(new BadRequestException(ErrorCode.AUTH_009, "Password reset token invalid or expired"))
+        .when(authService)
+        .resetPassword(any());
+
+    mockMvc
+        .perform(
+            post("/api/v1/auth/reset-password")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"token":"bad-token","newPassword":"newpassword123"}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("AUTH_009"));
   }
 }

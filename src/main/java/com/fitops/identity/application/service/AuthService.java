@@ -1,7 +1,9 @@
 package com.fitops.identity.application.service;
 
+import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
+import com.fitops.identity.api.request.ResetPasswordRequest;
 import com.fitops.identity.api.response.AuthResponse;
 
 public interface AuthService {
@@ -12,4 +14,8 @@ public interface AuthService {
   LoginResult refresh(String rawRefreshToken);
 
   void logout(String rawRefreshToken);
+
+  void forgotPassword(ForgotPasswordRequest request);
+
+  void resetPassword(ResetPasswordRequest request);
 }
