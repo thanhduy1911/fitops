@@ -17,6 +17,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -26,6 +27,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
   PasswordProperties.class,
   RefreshTokenProperties.class,
   PasswordResetProperties.class,
+  RateLimitProperties.class,
 })
 public class SecurityConfiguration {
   private static final String[] PUBLIC_PATHS = {
@@ -42,6 +44,7 @@ public class SecurityConfiguration {
   public SecurityFilterChain securityFilterChain(
       HttpSecurity http,
       JwtAuthenticationFilter jwtAuthenticationFilter,
+      RateLimitFilter rateLimitFilter,
       JwtAuthenticationEntryPoint entryPoint,
       CorsConfigurationSource corsConfigurationSource)
       throws Exception {
@@ -52,6 +55,7 @@ public class SecurityConfiguration {
         .authorizeHttpRequests(
             auth -> auth.requestMatchers(PUBLIC_PATHS).permitAll().anyRequest().authenticated())
         .exceptionHandling(exception -> exception.authenticationEntryPoint(entryPoint))
+        .addFilterAfter(rateLimitFilter, CorsFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();
   }
@@ -84,5 +88,13 @@ public class SecurityConfiguration {
   @Bean
   public PasswordEncoder passwordEncoder(PasswordProperties props) {
     return new BCryptPasswordEncoder(props.bcryptStrength());
+  }
+
+  @Bean
+  public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(
+      RateLimitFilter filter) {
+    var registration = new FilterRegistrationBean<>(filter);
+    registration.setEnabled(false);
+    return registration;
   }
 }

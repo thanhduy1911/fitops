@@ -47,6 +47,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return buildResponse(ErrorCode.GENERAL_002, "An unexpected error occurred");
   }
 
+  @ExceptionHandler(RateLimitExceededException.class)
+  public ResponseEntity<ProblemDetail> handleRateLimitExceeded(
+      RateLimitExceededException exception) {
+    logger.warn("Rate limit exceeded: [{}]", exception.getErrorCode());
+    var body =
+        ProblemDetail.forStatusAndDetail(
+            exception.getErrorCode().getStatus(), exception.getMessage());
+    body.setTitle(exception.getErrorCode().getTitle());
+    body.setProperty(ERROR_CODE, exception.getErrorCode().name());
+    body.setProperty(REQUEST_ID, MDC.get(REQUEST_ID_MDC));
+    return ResponseEntity.status(exception.getErrorCode().getStatus())
+        .header(HttpHeaders.RETRY_AFTER, Long.toString(exception.getRetryAfterSeconds()))
+        .body(body);
+  }
+
   @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
       MethodArgumentNotValidException exception,
