@@ -149,4 +149,16 @@ class RateLimitIntegrationTest {
         .andExpect(status().isTooManyRequests())
         .andExpect(jsonPath("$.errorCode").value("AUTH_006"));
   }
+
+  @Test
+  void spoofedLeftmostRotation_blocksAfterFive() throws Exception {
+    String trustedHop = "198.51.100.1";
+    for (int i = 0; i < 5; i++) {
+      login("203.0.113." + i + ", " + trustedHop).andExpect(status().isUnauthorized());
+    }
+    login("203.0.113.99, " + trustedHop)
+        .andExpect(status().isTooManyRequests())
+        .andExpect(header().exists("Retry-After"))
+        .andExpect(jsonPath("$.errorCode").value("AUTH_006"));
+  }
 }

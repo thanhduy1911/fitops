@@ -37,4 +37,12 @@ public class ClientIpResolverTest {
     request.setRemoteAddr("198.51.100.42");
     assertThat(resolver.resolve(request)).isEqualTo("198.51.100.42");
   }
+
+  @Test
+  void repeatedXffHeaders_resolvesToRightmostTrustedEntry() {
+    var request = new MockHttpServletRequest();
+    request.addHeader(ServiceHeader.FORWARDED_FOR_HEADER.getHeaderName(), "1.2.3.4");
+    request.addHeader(ServiceHeader.FORWARDED_FOR_HEADER.getHeaderName(), "203.0.113.7");
+    assertThat(resolver.resolve(request)).isEqualTo("203.0.113.7");
+  }
 }
