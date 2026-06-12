@@ -2,8 +2,11 @@ package com.fitops.commons.security;
 
 import com.fitops.commons.constants.ServiceHeader;
 import jakarta.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -11,24 +14,57 @@ public class ClientIpResolver {
   private static final String FORWARDED_FOR_HEADER =
       ServiceHeader.FORWARDED_FOR_HEADER.getHeaderName();
 
+  private final List<String> trustedProxies;
+
+  public ClientIpResolver(
+      @Value("${security.trusted-proxies:}") String trustedProxiesConfig) {
+    this.trustedProxies =
+        trustedProxiesConfig.isEmpty()
+            ? Collections.emptyList()
+            : Arrays.asList(trustedProxiesConfig.split(","));
+  }
+
   /**
-   * Resolve the caller IP as observed by the trusted edge proxy. Behind a single reverse proxy the
-   * only trustworthy value in {@code X-Forwarded-For} is the rightmost entry, the hop the proxy
-   * itself appended. A client can pre-seed the header, so anything left of that is
-   * attacker-controlled and ignored. Falls back to {@code getRemoteAddr()} when no proxy is
-   * present.
+   * Resolve the caller IP. Only honors {@code X-Forwarded-For} when the immediate peer (from
+   * {@code getRemoteAddr()}) is a configured trusted proxy. When trusted, returns the leftmost
+   * (original client) entry from the header. Otherwise returns {@code getRemoteAddr()} directly.
    */
   public String resolve(HttpServletRequest request) {
-    Enumeration<String> lines = request.getHeaders(FORWARDED_FOR_HEADER);
-    String rightmost = null;
-    while (lines.hasMoreElements()) {
-      for (String hop : lines.nextElement().split(",")) {
+    String remoteAddr = request.getRemoteAddr();
+
+    // Only trust X-Forwarded-For if the immediate peer is a trusted proxy
+    if (!isTrustedProxy(remoteAddr)) {
+      return remoteAddr;
+    }
+
+    // Parse X-Forwarded-For and extract the leftmost (original client) IP
+    String forwardedFor = request.getHeader(FORWARDED_FOR_HEADER);
+    if (StringUtils.isNotBlank(forwardedFor)) {
+      String[] hops = forwardedFor.split(",");
+      for (String hop : hops) {
         String trimmed = hop.trim();
         if (StringUtils.isNotBlank(trimmed)) {
-          rightmost = trimmed;
+          // Return the first (leftmost) valid entry - the original client IP
+          return trimmed;
         }
       }
     }
-    return rightmost != null ? rightmost : request.getRemoteAddr();
+
+    // Fall back to remote address if header is absent, empty, or malformed
+    return remoteAddr;
+  }
+
+  /**
+   * Check whether the given IP address is in the list of trusted proxies.
+   *
+   * @param ip the IP address to check
+   * @return true if the IP is a trusted proxy, false otherwise
+   */
+  private boolean isTrustedProxy(String ip) {
+    if (ip == null || trustedProxies.isEmpty()) {
+      return false;
+    }
+    // Trim configured proxies and compare
+    return trustedProxies.stream().anyMatch(proxy -> proxy.trim().equals(ip));
   }
 }
