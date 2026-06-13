@@ -16,6 +16,10 @@ public class ClientIpResolver {
 
   private final List<String> trustedProxies;
 
+  public ClientIpResolver() {
+    this("");
+  }
+
   public ClientIpResolver(
       @Value("${security.trusted-proxies:}") String trustedProxiesConfig) {
     this.trustedProxies =
@@ -26,8 +30,8 @@ public class ClientIpResolver {
 
   /**
    * Resolve the caller IP. Only honors {@code X-Forwarded-For} when the immediate peer (from
-   * {@code getRemoteAddr()}) is a configured trusted proxy. When trusted, returns the leftmost
-   * (original client) entry from the header. Otherwise returns {@code getRemoteAddr()} directly.
+   * {@code getRemoteAddr()}) is a configured trusted proxy. When trusted, returns the rightmost
+   * non-proxy entry from the header. Otherwise returns {@code getRemoteAddr()} directly.
    */
   public String resolve(HttpServletRequest request) {
     String remoteAddr = request.getRemoteAddr();
@@ -37,14 +41,15 @@ public class ClientIpResolver {
       return remoteAddr;
     }
 
-    // Parse X-Forwarded-For and extract the leftmost (original client) IP
+    // Parse X-Forwarded-For and extract the rightmost non-proxy IP
     String forwardedFor = request.getHeader(FORWARDED_FOR_HEADER);
     if (StringUtils.isNotBlank(forwardedFor)) {
       String[] hops = forwardedFor.split(",");
-      for (String hop : hops) {
-        String trimmed = hop.trim();
-        if (StringUtils.isNotBlank(trimmed)) {
-          // Return the first (leftmost) valid entry - the original client IP
+      // Iterate right-to-left to find the first non-proxy entry
+      for (int i = hops.length - 1; i >= 0; i--) {
+        String trimmed = hops[i].trim();
+        if (StringUtils.isNotBlank(trimmed) && !isTrustedProxy(trimmed)) {
+          // Return the rightmost non-proxy entry - the original client IP
           return trimmed;
         }
       }
