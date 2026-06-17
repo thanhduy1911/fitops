@@ -2,15 +2,17 @@ package com.fitops.commons;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.constants.MDCConstant;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.FitOpsException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
+import com.fitops.commons.exception.RateLimitExceededException;
 import com.fitops.commons.security.JwtService;
+import com.fitops.commons.security.RateLimitFilter;
+import com.fitops.commons.security.RateLimitProperties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.AfterEach;
@@ -41,6 +43,8 @@ public class GlobalExceptionHandlerTest {
 
   @Autowired MockMvc mockMvc;
   @MockitoBean JwtService jwtService;
+  @MockitoBean RateLimitProperties rateLimitProperties;
+  @MockitoBean RateLimitFilter rateLimitFilter;
 
   @BeforeEach
   void setMdc() {
@@ -104,6 +108,17 @@ public class GlobalExceptionHandlerTest {
         .andExpect(jsonPath("$.requestId").value(REQUEST_ID));
   }
 
+  @Test
+  void rateLimitExceeded_returns429_withAuth006AndRetryAfter() throws Exception {
+    mockMvc
+        .perform(get("/test/throw-ratelimit"))
+        .andExpect(status().isTooManyRequests())
+        .andExpect(header().string("Retry-After", "12"))
+        .andExpect(jsonPath("$.errorCode").value("AUTH_006"))
+        .andExpect(jsonPath("$.title").value("Rate limit exceeded"))
+        .andExpect(jsonPath("$.requestId").value(REQUEST_ID));
+  }
+
   @RestController
   @RequestMapping("/test")
   static class TestController {
@@ -126,6 +141,11 @@ public class GlobalExceptionHandlerTest {
     @GetMapping("/throw-conflict")
     void throwConflict() {
       throw new ConflictException(ErrorCode.AUTH_004, "Email already registered");
+    }
+
+    @GetMapping("/throw-ratelimit")
+    void throwRateLimit() {
+      throw new RateLimitExceededException(12);
     }
   }
 

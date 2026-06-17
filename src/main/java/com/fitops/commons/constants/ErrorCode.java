@@ -13,6 +13,7 @@ public enum ErrorCode {
   AUTH_003(HttpStatus.UNAUTHORIZED, "Refresh token invalid or revoked"),
   AUTH_004(HttpStatus.CONFLICT, "Email already registered"),
   AUTH_005(HttpStatus.CONFLICT, "Username already taken"),
+  AUTH_006(HttpStatus.TOO_MANY_REQUESTS, "Rate limit exceeded"),
   AUTH_007(HttpStatus.UNAUTHORIZED, "Invalid credentials"),
   AUTH_009(HttpStatus.BAD_REQUEST, "Password reset token invalid or expired"),
   ;

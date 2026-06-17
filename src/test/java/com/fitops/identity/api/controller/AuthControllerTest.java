@@ -11,6 +11,7 @@ import com.fitops.commons.constants.MDCConstant;
 import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
 import com.fitops.commons.security.JwtService;
+import com.fitops.commons.security.RateLimitFilter;
 import com.fitops.commons.security.RefreshTokenProperties;
 import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
@@ -43,6 +44,7 @@ class AuthControllerTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private RefreshTokenProperties refreshTokenProperties;
   @MockitoBean AuthService authService;
+  @MockitoBean RateLimitFilter rateLimitFilter;
   @MockitoBean JwtService jwtService;
 
   @BeforeEach
