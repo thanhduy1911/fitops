@@ -46,6 +46,7 @@ public class SecurityConfiguration {
       JwtAuthenticationFilter jwtAuthenticationFilter,
       RateLimitFilter rateLimitFilter,
       JwtAuthenticationEntryPoint entryPoint,
+      JwtAccessDeniedHandler accessDeniedHandler,
       CorsConfigurationSource corsConfigurationSource)
       throws Exception {
     return http.csrf(AbstractHttpConfigurer::disable)
@@ -54,7 +55,11 @@ public class SecurityConfiguration {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth -> auth.requestMatchers(PUBLIC_PATHS).permitAll().anyRequest().authenticated())
-        .exceptionHandling(exception -> exception.authenticationEntryPoint(entryPoint))
+        .exceptionHandling(
+            exception ->
+                exception
+                    .authenticationEntryPoint(entryPoint)
+                    .accessDeniedHandler(accessDeniedHandler))
         .addFilterAfter(rateLimitFilter, CorsFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .build();

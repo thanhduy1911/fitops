@@ -13,6 +13,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -33,12 +35,19 @@ public class SecurityIntegrationTest {
   @Autowired private JwtService jwtService;
 
   @TestConfiguration
+  @EnableMethodSecurity
   static class TestEndpoints {
     @RestController
     static class PingController {
       @GetMapping("/test/ping")
       String ping() {
         return "pong";
+      }
+
+      @PreAuthorize("hasRole('ADMIN')")
+      @GetMapping("/test/admin")
+      String admin() {
+        return "secret";
       }
     }
   }
@@ -85,5 +94,17 @@ public class SecurityIntegrationTest {
         .andExpect(status().isOk())
         .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
         .andExpect(header().string("Access-Control-Allow-Credentials", "true"));
+  }
+
+  @Test
+  void roleUser_GET_test_admin_returns_403() throws Exception {
+    String token = jwtService.generate(UUID.randomUUID(), Set.of("ROLE_USER"));
+    mockMvc
+        .perform(get("/test/admin").header("Authorization", "Bearer " + token))
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(jsonPath("$.errorCode").value("AUTH_008"))
+        .andExpect(jsonPath("$.requestId").exists())
+        .andExpect(jsonPath("$.title").value("Access denied"));
   }
 }

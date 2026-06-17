@@ -13,6 +13,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,6 +40,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
       AuthenticationException exception) {
     logger.debug("Authentication failed: {}", exception.getClass().getSimpleName());
     return buildResponse(ErrorCode.AUTH_001, "Authentication required");
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException exception) {
+    logger.debug("Access denied: {}", exception.getClass().getSimpleName());
+    return buildResponse(ErrorCode.AUTH_008, "Access denied");
   }
 
   @ExceptionHandler(Exception.class)
