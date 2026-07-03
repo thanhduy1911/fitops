@@ -9,7 +9,6 @@ import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.UnauthorizedException;
 import com.fitops.commons.security.JwtProperties;
-import com.fitops.commons.security.JwtService;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.application.port.PasswordResetMailer;
@@ -40,7 +39,7 @@ class AuthServiceImplTest {
   @Mock private PasswordEncoder passwordEncoder;
   @Mock private JwtProperties jwtProperties;
   @Mock private ApplicationEventPublisher applicationEventPublisher;
-  @Mock private JwtService jwtService;
+  @Mock private JwtIssuer jwtIssuer;
   @Mock private RefreshTokenService refreshTokenService;
   @Mock private PasswordResetService passwordResetService;
   @Mock private PasswordResetMailer passwordResetMailer;
@@ -58,7 +57,7 @@ class AuthServiceImplTest {
             passwordEncoder,
             jwtProperties,
             applicationEventPublisher,
-            jwtService,
+            jwtIssuer,
             refreshTokenService,
             passwordResetService,
             passwordResetMailer);
@@ -76,7 +75,7 @@ class AuthServiceImplTest {
     when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(roleUser));
     when(passwordEncoder.encode("password123")).thenReturn("hashedPw");
     when(jwtProperties.accessTokenTtl()).thenReturn(Duration.ofSeconds(3600));
-    when(jwtService.generate(any(), any())).thenReturn("jwt-token");
+    when(jwtIssuer.generate(any(), any())).thenReturn("jwt-token");
 
     var response = authServiceImpl.register(registerRequest);
 
@@ -108,7 +107,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_004);
     verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
-    verifyNoInteractions(applicationEventPublisher, jwtService);
+    verifyNoInteractions(applicationEventPublisher, jwtIssuer);
   }
 
   @Test
@@ -122,7 +121,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_005);
     verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
-    verifyNoInteractions(applicationEventPublisher, jwtService);
+    verifyNoInteractions(applicationEventPublisher, jwtIssuer);
   }
 
   @Test
@@ -146,7 +145,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_005);
 
     verify(applicationEventPublisher, never()).publishEvent(any());
-    verifyNoInteractions(jwtService);
+    verifyNoInteractions(jwtIssuer);
   }
 
   @Test
@@ -191,7 +190,7 @@ class AuthServiceImplTest {
     when(userRepository.findByEmail("joe.doe@fitops.com")).thenReturn(Optional.of(user));
     when(passwordEncoder.matches("password123", "hashedPw")).thenReturn(true);
     when(jwtProperties.accessTokenTtl()).thenReturn(Duration.ofSeconds(3600));
-    when(jwtService.generate(any(), any())).thenReturn("jwt");
+    when(jwtIssuer.generate(any(), any())).thenReturn("jwt");
     when(refreshTokenService.issue(user.getId())).thenReturn("raw");
 
     var result = authServiceImpl.login(loginRequest);
@@ -202,7 +201,7 @@ class AuthServiceImplTest {
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<Set<String>> rolesCaptor = ArgumentCaptor.forClass(Set.class);
-    verify(jwtService).generate(eq(user.getId()), rolesCaptor.capture());
+    verify(jwtIssuer).generate(eq(user.getId()), rolesCaptor.capture());
     assertThat(rolesCaptor.getValue()).containsExactly("ROLE_USER");
   }
 
@@ -219,7 +218,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_007);
 
     verify(refreshTokenService, never()).issue(any());
-    verifyNoInteractions(jwtService);
+    verifyNoInteractions(jwtIssuer);
   }
 
   @Test
@@ -234,7 +233,7 @@ class AuthServiceImplTest {
 
     verify(passwordEncoder).matches(eq("password123"), any());
     verify(refreshTokenService, never()).issue(any());
-    verifyNoInteractions(jwtService);
+    verifyNoInteractions(jwtIssuer);
   }
 
   @Test
@@ -252,6 +251,6 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_007);
 
     verify(refreshTokenService, never()).issue(any());
-    verifyNoInteractions(jwtService);
+    verifyNoInteractions(jwtIssuer);
   }
 }

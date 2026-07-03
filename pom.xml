@@ -29,6 +29,7 @@
         <jjwt.version>0.13.0</jjwt.version>
         <rest-assured.version>6.0.0</rest-assured.version>
         <bucket4j.version>8.18.0</bucket4j.version>
+        <lomlok-mapstruct-binding.version>0.2.0</lomlok-mapstruct-binding.version>
     </properties>
 
     <dependencyManagement>
@@ -57,6 +58,11 @@
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok-mapstruct-binding</artifactId>
+                <version>${lomlok-mapstruct-binding.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.springdoc</groupId>
@@ -300,6 +306,10 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                        </path>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
                         </path>
                         <path>
                             <groupId>org.mapstruct</groupId>

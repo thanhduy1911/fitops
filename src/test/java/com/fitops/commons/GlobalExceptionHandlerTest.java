@@ -10,7 +10,7 @@ import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.FitOpsException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
 import com.fitops.commons.exception.RateLimitExceededException;
-import com.fitops.commons.security.JwtService;
+import com.fitops.commons.security.JwtVerifier;
 import com.fitops.commons.security.RateLimitFilter;
 import com.fitops.commons.security.RateLimitProperties;
 import jakarta.validation.Valid;
@@ -42,7 +42,7 @@ public class GlobalExceptionHandlerTest {
   private static final String REQUEST_ID = "request-id-1";
 
   @Autowired MockMvc mockMvc;
-  @MockitoBean JwtService jwtService;
+  @MockitoBean JwtVerifier jwtVerifier;
   @MockitoBean RateLimitProperties rateLimitProperties;
   @MockitoBean RateLimitFilter rateLimitFilter;
 
