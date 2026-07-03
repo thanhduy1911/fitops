@@ -25,8 +25,6 @@ import org.springframework.web.filter.CorsFilter;
   JwtProperties.class,
   CorsProperties.class,
   PasswordProperties.class,
-  RefreshTokenProperties.class,
-  PasswordResetProperties.class,
   RateLimitProperties.class,
 })
 public class SecurityConfiguration {

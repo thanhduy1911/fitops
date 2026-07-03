@@ -3,7 +3,7 @@ package com.fitops.identity.application.service;
 import static com.fitops.commons.security.OpaqueTokens.sha256Hex;
 
 import com.fitops.commons.security.OpaqueTokens;
-import com.fitops.commons.security.RefreshTokenProperties;
+import com.fitops.identity.config.RefreshTokenProperties;
 import com.fitops.identity.domain.entity.RefreshToken;
 import com.fitops.identity.infrastructure.persistence.RefreshTokenRepository;
 import java.time.Clock;
