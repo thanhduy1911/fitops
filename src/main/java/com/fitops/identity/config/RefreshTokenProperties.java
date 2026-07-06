@@ -1,4 +1,4 @@
-package com.fitops.commons.security;
+package com.fitops.identity.config;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

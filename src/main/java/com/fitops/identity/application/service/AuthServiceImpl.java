@@ -5,7 +5,6 @@ import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.UnauthorizedException;
 import com.fitops.commons.security.JwtProperties;
-import com.fitops.commons.security.JwtService;
 import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
@@ -40,7 +39,7 @@ public class AuthServiceImpl implements AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtProperties jwtProperties;
   private final ApplicationEventPublisher applicationEventPublisher;
-  private final JwtService jwtService;
+  private final JwtIssuer jwtIssuer;
   private final RefreshTokenService refreshTokenService;
   private final PasswordResetService passwordResetService;
   private final PasswordResetMailer passwordResetMailer;
@@ -51,7 +50,7 @@ public class AuthServiceImpl implements AuthService {
       PasswordEncoder passwordEncoder,
       JwtProperties jwtProperties,
       ApplicationEventPublisher applicationEventPublisher,
-      JwtService jwtService,
+      JwtIssuer jwtIssuer,
       RefreshTokenService refreshTokenService,
       PasswordResetService passwordResetService,
       PasswordResetMailer passwordResetMailer) {
@@ -60,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
     this.passwordEncoder = passwordEncoder;
     this.jwtProperties = jwtProperties;
     this.applicationEventPublisher = applicationEventPublisher;
-    this.jwtService = jwtService;
+    this.jwtIssuer = jwtIssuer;
     this.refreshTokenService = refreshTokenService;
     this.dummyHash = passwordEncoder.encode(DUMMY_RAW_TOKEN);
     this.passwordResetService = passwordResetService;
@@ -100,7 +99,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     applicationEventPublisher.publishEvent(new UserRegisteredEvent(user.getId(), Instant.now()));
-    var accessToken = jwtService.generate(user.getId(), Set.of(ROLE_USER));
+    var accessToken = jwtIssuer.generate(user.getId(), Set.of(ROLE_USER));
     var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
     // TODO:instant 7-day session on signup - see FO-0045 "Deferred" section
     return new AuthResponse(accessToken, "Bearer", expiresIn);
@@ -125,7 +124,7 @@ public class AuthServiceImpl implements AuthService {
       throw new UnauthorizedException(ErrorCode.AUTH_007, "Invalid credentials");
     }
     var roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
-    var accessToken = jwtService.generate(user.getId(), roles);
+    var accessToken = jwtIssuer.generate(user.getId(), roles);
     var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
     var rawRefreshToken = refreshTokenService.issue(user.getId());
 
@@ -151,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
                     new UnauthorizedException(
                         ErrorCode.AUTH_003, "Refresh token invalid or revoked"));
     var roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
-    var accessToken = jwtService.generate(user.getId(), roles);
+    var accessToken = jwtIssuer.generate(user.getId(), roles);
     var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
     var newRefreshToken = refreshTokenService.issue(userId);
 

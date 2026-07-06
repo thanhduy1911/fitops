@@ -10,12 +10,12 @@ import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.constants.MDCConstant;
 import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
-import com.fitops.commons.security.JwtService;
+import com.fitops.commons.security.JwtVerifier;
 import com.fitops.commons.security.RateLimitFilter;
-import com.fitops.commons.security.RefreshTokenProperties;
 import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
 import com.fitops.identity.application.service.LoginResult;
+import com.fitops.identity.config.RefreshTokenProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +45,7 @@ class AuthControllerTest {
   @Autowired private RefreshTokenProperties refreshTokenProperties;
   @MockitoBean AuthService authService;
   @MockitoBean RateLimitFilter rateLimitFilter;
-  @MockitoBean JwtService jwtService;
+  @MockitoBean JwtVerifier jwtVerifier;
 
   @BeforeEach
   void setMdc() {

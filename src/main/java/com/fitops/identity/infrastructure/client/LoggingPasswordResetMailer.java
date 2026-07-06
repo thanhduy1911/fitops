@@ -1,7 +1,7 @@
 package com.fitops.identity.infrastructure.client;
 
-import com.fitops.commons.security.PasswordResetProperties;
 import com.fitops.identity.application.port.PasswordResetMailer;
+import com.fitops.identity.config.PasswordResetProperties;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

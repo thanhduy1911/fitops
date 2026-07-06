@@ -1,7 +1,7 @@
 package com.fitops.identity.application.service;
 
 import com.fitops.commons.security.OpaqueTokens;
-import com.fitops.commons.security.PasswordResetProperties;
+import com.fitops.identity.config.PasswordResetProperties;
 import com.fitops.identity.domain.entity.PasswordResetToken;
 import com.fitops.identity.infrastructure.persistence.PasswordResetTokenRepository;
 import java.time.Clock;

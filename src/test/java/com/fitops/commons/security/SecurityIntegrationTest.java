@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import com.fitops.identity.application.service.JwtIssuer;
 import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,7 @@ public class SecurityIntegrationTest {
       new PostgreSQLContainer("postgres:18-alpine").withReuse(true);
 
   @Autowired private MockMvc mockMvc;
-  @Autowired private JwtService jwtService;
+  @Autowired private JwtIssuer jwtIssuer;
 
   @TestConfiguration
   @EnableMethodSecurity
@@ -64,7 +65,7 @@ public class SecurityIntegrationTest {
 
   @Test
   void authed_GET_test_ping_returns_200_pong() throws Exception {
-    String token = jwtService.generate(UUID.randomUUID(), Set.of("ROLE_USER"));
+    String token = jwtIssuer.generate(UUID.randomUUID(), Set.of("ROLE_USER"));
     mockMvc
         .perform(get("/test/ping").header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
@@ -98,7 +99,7 @@ public class SecurityIntegrationTest {
 
   @Test
   void roleUser_GET_test_admin_returns_403() throws Exception {
-    String token = jwtService.generate(UUID.randomUUID(), Set.of("ROLE_USER"));
+    String token = jwtIssuer.generate(UUID.randomUUID(), Set.of("ROLE_USER"));
     mockMvc
         .perform(get("/test/admin").header("Authorization", "Bearer " + token))
         .andExpect(status().isForbidden())

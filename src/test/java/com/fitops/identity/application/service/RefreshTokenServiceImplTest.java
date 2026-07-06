@@ -4,7 +4,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.fitops.commons.security.RefreshTokenProperties;
+import com.fitops.identity.config.RefreshTokenProperties;
 import com.fitops.identity.domain.entity.RefreshToken;
 import com.fitops.identity.infrastructure.persistence.RefreshTokenRepository;
 import java.nio.charset.StandardCharsets;

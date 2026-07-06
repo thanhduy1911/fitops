@@ -16,10 +16,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
   private static final String AUTH_HEADER = "Authorization";
   private static final String BEARER_PREFIX = "Bearer ";
 
-  private final JwtService jwtService;
+  private final JwtVerifier jwtVerifier;
 
-  public JwtAuthenticationFilter(JwtService jwtService) {
-    this.jwtService = jwtService;
+  public JwtAuthenticationFilter(JwtVerifier jwtVerifier) {
+    this.jwtVerifier = jwtVerifier;
   }
 
   @Override
@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       var header = request.getHeader(AUTH_HEADER);
       if (header != null && header.startsWith(BEARER_PREFIX)) {
         var token = header.substring(BEARER_PREFIX.length());
-        jwtService
+        jwtVerifier
             .parse(token)
             .ifPresent(
                 principal -> {

@@ -1,12 +1,12 @@
 package com.fitops.identity.api.controller;
 
-import com.fitops.commons.security.RefreshTokenProperties;
 import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.api.request.ResetPasswordRequest;
 import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
+import com.fitops.identity.config.RefreshTokenProperties;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import org.springframework.http.HttpHeaders;
