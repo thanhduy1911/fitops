@@ -8,7 +8,6 @@ import static org.mockito.Mockito.*;
 import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.UnauthorizedException;
-import com.fitops.commons.security.JwtProperties;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.application.port.PasswordResetMailer;
@@ -17,7 +16,6 @@ import com.fitops.identity.domain.entity.User;
 import com.fitops.identity.domain.event.UserRegisteredEvent;
 import com.fitops.identity.infrastructure.persistence.RoleRepository;
 import com.fitops.identity.infrastructure.persistence.UserRepository;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.Set;
 import org.hibernate.exception.ConstraintViolationException;
@@ -37,12 +35,11 @@ class AuthServiceImplTest {
   @Mock private UserRepository userRepository;
   @Mock private RoleRepository roleRepository;
   @Mock private PasswordEncoder passwordEncoder;
-  @Mock private JwtProperties jwtProperties;
   @Mock private ApplicationEventPublisher applicationEventPublisher;
-  @Mock private JwtIssuer jwtIssuer;
   @Mock private RefreshTokenService refreshTokenService;
   @Mock private PasswordResetService passwordResetService;
   @Mock private PasswordResetMailer passwordResetMailer;
+  @Mock private AccessTokenMinter accessTokenMinter;
 
   private AuthServiceImpl authServiceImpl;
   private RegisterRequest registerRequest;
@@ -55,9 +52,8 @@ class AuthServiceImplTest {
             userRepository,
             roleRepository,
             passwordEncoder,
-            jwtProperties,
             applicationEventPublisher,
-            jwtIssuer,
+            accessTokenMinter,
             refreshTokenService,
             passwordResetService,
             passwordResetMailer);
@@ -74,14 +70,15 @@ class AuthServiceImplTest {
     when(userRepository.existsByUsernameIgnoreCase("John.Doe123")).thenReturn(false);
     when(roleRepository.findByName("ROLE_USER")).thenReturn(Optional.of(roleUser));
     when(passwordEncoder.encode("password123")).thenReturn("hashedPw");
-    when(jwtProperties.accessTokenTtl()).thenReturn(Duration.ofSeconds(3600));
-    when(jwtIssuer.generate(any(), any())).thenReturn("jwt-token");
+    when(accessTokenMinter.mint(any(), any()))
+        .thenReturn(new MintedAccessToken("jwt-token", "Bearer", 3600L));
 
     var response = authServiceImpl.register(registerRequest);
 
     assertThat(response.accessToken()).isEqualTo("jwt-token");
     assertThat(response.tokenType()).isEqualTo("Bearer");
     assertThat(response.expiresIn()).isEqualTo(3600L);
+    verify(accessTokenMinter).mint(any(), eq(Set.of("ROLE_USER")));
 
     var userCaptor = ArgumentCaptor.forClass(User.class);
     verify(userRepository).saveAndFlush(userCaptor.capture());
@@ -107,7 +104,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_004);
     verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
-    verifyNoInteractions(applicationEventPublisher, jwtIssuer);
+    verifyNoInteractions(applicationEventPublisher, accessTokenMinter);
   }
 
   @Test
@@ -121,7 +118,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_005);
     verify(passwordEncoder, never()).encode("password123");
     verify(userRepository, never()).saveAndFlush(any());
-    verifyNoInteractions(applicationEventPublisher, jwtIssuer);
+    verifyNoInteractions(applicationEventPublisher, accessTokenMinter);
   }
 
   @Test
@@ -145,7 +142,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_005);
 
     verify(applicationEventPublisher, never()).publishEvent(any());
-    verifyNoInteractions(jwtIssuer);
+    verifyNoInteractions(accessTokenMinter);
   }
 
   @Test
@@ -189,19 +186,19 @@ class AuthServiceImplTest {
 
     when(userRepository.findByEmail("joe.doe@fitops.com")).thenReturn(Optional.of(user));
     when(passwordEncoder.matches("password123", "hashedPw")).thenReturn(true);
-    when(jwtProperties.accessTokenTtl()).thenReturn(Duration.ofSeconds(3600));
-    when(jwtIssuer.generate(any(), any())).thenReturn("jwt");
+    when(accessTokenMinter.mint(any(), any()))
+        .thenReturn(new MintedAccessToken("jwt", "Bearer", 3600L));
     when(refreshTokenService.issue(user.getId())).thenReturn("raw");
 
     var result = authServiceImpl.login(loginRequest);
 
-    assertThat(result.accessToken()).isEqualTo("jwt");
-    assertThat(result.expiresIn()).isEqualTo(3600L);
+    assertThat(result.accessToken().accessToken()).isEqualTo("jwt");
+    assertThat(result.accessToken().expiresIn()).isEqualTo(3600L);
     assertThat(result.rawRefreshToken()).isEqualTo("raw");
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<Set<String>> rolesCaptor = ArgumentCaptor.forClass(Set.class);
-    verify(jwtIssuer).generate(eq(user.getId()), rolesCaptor.capture());
+    verify(accessTokenMinter).mint(eq(user.getId()), rolesCaptor.capture());
     assertThat(rolesCaptor.getValue()).containsExactly("ROLE_USER");
   }
 
@@ -218,7 +215,7 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_007);
 
     verify(refreshTokenService, never()).issue(any());
-    verifyNoInteractions(jwtIssuer);
+    verifyNoInteractions(accessTokenMinter);
   }
 
   @Test
@@ -233,7 +230,7 @@ class AuthServiceImplTest {
 
     verify(passwordEncoder).matches(eq("password123"), any());
     verify(refreshTokenService, never()).issue(any());
-    verifyNoInteractions(jwtIssuer);
+    verifyNoInteractions(accessTokenMinter);
   }
 
   @Test
@@ -251,6 +248,6 @@ class AuthServiceImplTest {
         .isEqualTo(ErrorCode.AUTH_007);
 
     verify(refreshTokenService, never()).issue(any());
-    verifyNoInteractions(jwtIssuer);
+    verifyNoInteractions(accessTokenMinter);
   }
 }

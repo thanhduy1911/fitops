@@ -29,7 +29,7 @@ public class AuthController {
   @PostMapping("/register")
   @ResponseStatus(HttpStatus.CREATED)
   public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
-    return authService.register(request);
+    return AuthResponse.from(authService.register(request));
   }
 
   @PostMapping("/login")
@@ -39,7 +39,7 @@ public class AuthController {
 
     return ResponseEntity.ok()
         .header(HttpHeaders.SET_COOKIE, cookie.toString())
-        .body(new AuthResponse(result.accessToken(), "Bearer", result.expiresIn()));
+        .body(AuthResponse.from(result.accessToken()));
   }
 
   @PostMapping("/refresh")
@@ -51,7 +51,7 @@ public class AuthController {
         .header(
             HttpHeaders.SET_COOKIE,
             refreshCookie(result.rawRefreshToken(), refreshTokenProperties.ttl()).toString())
-        .body(new AuthResponse(result.accessToken(), "Bearer", result.expiresIn()));
+        .body(AuthResponse.from(result.accessToken()));
   }
 
   @PostMapping("/logout")
