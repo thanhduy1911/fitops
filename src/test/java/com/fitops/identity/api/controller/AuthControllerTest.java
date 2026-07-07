@@ -12,9 +12,9 @@ import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
 import com.fitops.commons.security.JwtVerifier;
 import com.fitops.commons.security.RateLimitFilter;
-import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
 import com.fitops.identity.application.service.LoginResult;
+import com.fitops.identity.application.service.MintedAccessToken;
 import com.fitops.identity.config.RefreshTokenProperties;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +59,8 @@ class AuthControllerTest {
 
   @Test
   void register_validRequest_returns201_withTokenBody() throws Exception {
-    when(authService.register(any())).thenReturn(new AuthResponse("jwt-token", "Bearer", 3600L));
+    when(authService.register(any()))
+        .thenReturn(new MintedAccessToken("jwt-token", "Bearer", 3600L));
 
     mockMvc
         .perform(
@@ -101,7 +102,7 @@ class AuthControllerTest {
 
   @Test
   void login_validRequest_returns200_withTokenBodyAndRefreshCookie() throws Exception {
-    when(authService.login(any())).thenReturn(new LoginResult("jwt-token", 3600L, "raw-token"));
+    when(authService.login(any())).thenReturn(new LoginResult(new MintedAccessToken("jwt-token", "Bearer", 3600L), "raw-token"));
 
     mockMvc
         .perform(

@@ -4,12 +4,10 @@ import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.ConflictException;
 import com.fitops.commons.exception.UnauthorizedException;
-import com.fitops.commons.security.JwtProperties;
 import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.api.request.ResetPasswordRequest;
-import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.port.PasswordResetMailer;
 import com.fitops.identity.domain.entity.Role;
 import com.fitops.identity.domain.entity.User;
@@ -37,9 +35,8 @@ public class AuthServiceImpl implements AuthService {
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
-  private final JwtProperties jwtProperties;
   private final ApplicationEventPublisher applicationEventPublisher;
-  private final JwtIssuer jwtIssuer;
+  private final AccessTokenMinter accessTokenMinter;
   private final RefreshTokenService refreshTokenService;
   private final PasswordResetService passwordResetService;
   private final PasswordResetMailer passwordResetMailer;
@@ -48,18 +45,16 @@ public class AuthServiceImpl implements AuthService {
       UserRepository userRepository,
       RoleRepository roleRepository,
       PasswordEncoder passwordEncoder,
-      JwtProperties jwtProperties,
       ApplicationEventPublisher applicationEventPublisher,
-      JwtIssuer jwtIssuer,
+      AccessTokenMinter accessTokenMinter,
       RefreshTokenService refreshTokenService,
       PasswordResetService passwordResetService,
       PasswordResetMailer passwordResetMailer) {
     this.userRepository = userRepository;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
-    this.jwtProperties = jwtProperties;
     this.applicationEventPublisher = applicationEventPublisher;
-    this.jwtIssuer = jwtIssuer;
+    this.accessTokenMinter = accessTokenMinter;
     this.refreshTokenService = refreshTokenService;
     this.dummyHash = passwordEncoder.encode(DUMMY_RAW_TOKEN);
     this.passwordResetService = passwordResetService;
@@ -68,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   @Transactional
-  public AuthResponse register(RegisterRequest request) {
+  public MintedAccessToken register(RegisterRequest request) {
     String email = request.email().trim().toLowerCase(Locale.ROOT);
     String username = request.username().trim();
 
@@ -99,10 +94,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     applicationEventPublisher.publishEvent(new UserRegisteredEvent(user.getId(), Instant.now()));
-    var accessToken = jwtIssuer.generate(user.getId(), Set.of(ROLE_USER));
-    var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
     // TODO:instant 7-day session on signup - see FO-0045 "Deferred" section
-    return new AuthResponse(accessToken, "Bearer", expiresIn);
+    return accessTokenMinter.mint(user.getId(), Set.of(ROLE_USER));
   }
 
   @Override
@@ -124,11 +117,10 @@ public class AuthServiceImpl implements AuthService {
       throw new UnauthorizedException(ErrorCode.AUTH_007, "Invalid credentials");
     }
     var roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
-    var accessToken = jwtIssuer.generate(user.getId(), roles);
-    var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
+    var minted = accessTokenMinter.mint(user.getId(), roles);
     var rawRefreshToken = refreshTokenService.issue(user.getId());
 
-    return new LoginResult(accessToken, expiresIn, rawRefreshToken);
+    return new LoginResult(minted, rawRefreshToken);
   }
 
   @Override
@@ -150,11 +142,10 @@ public class AuthServiceImpl implements AuthService {
                     new UnauthorizedException(
                         ErrorCode.AUTH_003, "Refresh token invalid or revoked"));
     var roles = user.getRoles().stream().map(Role::getName).collect(Collectors.toSet());
-    var accessToken = jwtIssuer.generate(user.getId(), roles);
-    var expiresIn = jwtProperties.accessTokenTtl().toSeconds();
+    var minted = accessTokenMinter.mint(userId, roles);
     var newRefreshToken = refreshTokenService.issue(userId);
 
-    return new LoginResult(accessToken, expiresIn, newRefreshToken);
+    return new LoginResult(minted, newRefreshToken);
   }
 
   @Override
