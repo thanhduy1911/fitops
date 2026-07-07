@@ -1,17 +1,15 @@
 package com.fitops.identity.api.controller;
 
+import com.fitops.identity.api.RefreshTokenCookies;
 import com.fitops.identity.api.request.ForgotPasswordRequest;
 import com.fitops.identity.api.request.LoginRequest;
 import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.api.request.ResetPasswordRequest;
 import com.fitops.identity.api.response.AuthResponse;
 import com.fitops.identity.application.service.AuthService;
-import com.fitops.identity.config.RefreshTokenProperties;
 import jakarta.validation.Valid;
-import java.time.Duration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +17,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
   private final AuthService authService;
-  private final RefreshTokenProperties refreshTokenProperties;
+  private final RefreshTokenCookies refreshTokenCookies;
 
-  public AuthController(AuthService authService, RefreshTokenProperties refreshTokenProperties) {
+  public AuthController(AuthService authService, RefreshTokenCookies refreshTokenCookies) {
     this.authService = authService;
-    this.refreshTokenProperties = refreshTokenProperties;
+    this.refreshTokenCookies = refreshTokenCookies;
   }
 
   @PostMapping("/register")
@@ -35,10 +33,9 @@ public class AuthController {
   @PostMapping("/login")
   public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
     var result = authService.login(request);
-    var cookie = refreshCookie(result.rawRefreshToken(), refreshTokenProperties.ttl());
-
     return ResponseEntity.ok()
-        .header(HttpHeaders.SET_COOKIE, cookie.toString())
+        .header(
+            HttpHeaders.SET_COOKIE, refreshTokenCookies.issue(result.rawRefreshToken()).toString())
         .body(AuthResponse.from(result.accessToken()));
   }
 
@@ -49,8 +46,7 @@ public class AuthController {
     var result = authService.refresh(refreshToken);
     return ResponseEntity.ok()
         .header(
-            HttpHeaders.SET_COOKIE,
-            refreshCookie(result.rawRefreshToken(), refreshTokenProperties.ttl()).toString())
+            HttpHeaders.SET_COOKIE, refreshTokenCookies.issue(result.rawRefreshToken()).toString())
         .body(AuthResponse.from(result.accessToken()));
   }
 
@@ -60,7 +56,7 @@ public class AuthController {
           String refreshToken) {
     authService.logout(refreshToken);
     return ResponseEntity.ok()
-        .header(HttpHeaders.SET_COOKIE, refreshCookie("", Duration.ZERO).toString())
+        .header(HttpHeaders.SET_COOKIE, refreshTokenCookies.clear().toString())
         .build();
   }
 
@@ -74,15 +70,5 @@ public class AuthController {
   public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
     authService.resetPassword(request);
     return ResponseEntity.ok().build();
-  }
-
-  private ResponseCookie refreshCookie(String value, Duration maxAge) {
-    return ResponseCookie.from(refreshTokenProperties.cookieName(), value)
-        .httpOnly(true)
-        .secure(refreshTokenProperties.secure())
-        .sameSite("Strict")
-        .path(refreshTokenProperties.cookiePath())
-        .maxAge(maxAge)
-        .build();
   }
 }

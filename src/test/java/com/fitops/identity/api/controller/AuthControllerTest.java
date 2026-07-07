@@ -12,6 +12,7 @@ import com.fitops.commons.exception.BadRequestException;
 import com.fitops.commons.exception.GlobalExceptionHandler;
 import com.fitops.commons.security.JwtVerifier;
 import com.fitops.commons.security.RateLimitFilter;
+import com.fitops.identity.api.RefreshTokenCookies;
 import com.fitops.identity.application.service.AuthService;
 import com.fitops.identity.application.service.LoginResult;
 import com.fitops.identity.application.service.MintedAccessToken;
@@ -39,7 +40,7 @@ import org.springframework.test.web.servlet.MockMvc;
     })
 @AutoConfigureMockMvc(addFilters = false)
 @EnableConfigurationProperties(RefreshTokenProperties.class)
-@Import({GlobalExceptionHandler.class, AuthController.class})
+@Import({GlobalExceptionHandler.class, AuthController.class, RefreshTokenCookies.class})
 class AuthControllerTest {
   @Autowired private MockMvc mockMvc;
   @Autowired private RefreshTokenProperties refreshTokenProperties;
@@ -102,7 +103,9 @@ class AuthControllerTest {
 
   @Test
   void login_validRequest_returns200_withTokenBodyAndRefreshCookie() throws Exception {
-    when(authService.login(any())).thenReturn(new LoginResult(new MintedAccessToken("jwt-token", "Bearer", 3600L), "raw-token"));
+    when(authService.login(any()))
+        .thenReturn(
+            new LoginResult(new MintedAccessToken("jwt-token", "Bearer", 3600L), "raw-token"));
 
     mockMvc
         .perform(
