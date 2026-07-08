@@ -9,19 +9,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @ExtendWith(MockitoExtension.class)
-public class JwtAccessDeniedHandlerTest {
-  @Mock HandlerExceptionResolver exceptionResolver;
+public class ProblemDetailAccessDeniedHandlerTest {
+  @Mock ProblemDetailResolver problemDetailResolver;
   @Mock HttpServletRequest request;
   @Mock HttpServletResponse response;
 
   @Test
-  void handle_delegates_to_resolver() throws Exception {
-    var handler = new JwtAccessDeniedHandler(exceptionResolver);
+  void handle_delegates_to_resolver() {
+    var handler = new ProblemDetailAccessDeniedHandler(problemDetailResolver);
     var exception = new AccessDeniedException("denied");
     handler.handle(request, response, exception);
-    verify(exceptionResolver).resolveException(request, response, null, exception);
+    verify(problemDetailResolver).render(request, response, exception);
   }
 }
