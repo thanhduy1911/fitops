@@ -43,8 +43,8 @@ public class SecurityConfiguration {
       HttpSecurity http,
       JwtAuthenticationFilter jwtAuthenticationFilter,
       RateLimitFilter rateLimitFilter,
-      JwtAuthenticationEntryPoint entryPoint,
-      JwtAccessDeniedHandler accessDeniedHandler,
+      ProblemDetailAuthenticationEntryPoint entryPoint,
+      ProblemDetailAccessDeniedHandler accessDeniedHandler,
       CorsConfigurationSource corsConfigurationSource)
       throws Exception {
     return http.csrf(AbstractHttpConfigurer::disable)
