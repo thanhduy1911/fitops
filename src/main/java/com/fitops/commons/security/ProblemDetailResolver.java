@@ -1,8 +1,8 @@
 package com.fitops.commons.security;
 
-import jakarta.annotation.Nonnull;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerExceptionResolver;
@@ -24,9 +24,9 @@ public class ProblemDetailResolver {
   }
 
   public void render(
-      @Nonnull HttpServletRequest request,
-      @Nonnull HttpServletResponse response,
-      @Nonnull Exception exception) {
+      @NonNull HttpServletRequest request,
+      @NonNull HttpServletResponse response,
+      @NonNull Exception exception) {
     exceptionResolver.resolveException(request, response, null, exception);
   }
 }
