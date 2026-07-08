@@ -8,11 +8,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Set;
 import lombok.NonNull;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
@@ -21,17 +19,17 @@ public class RateLimitFilter extends OncePerRequestFilter {
   private final RateLimitProperties props;
   private final AuthRateLimiter rateLimiter;
   private final ClientIpResolver clientIpResolver;
-  private final HandlerExceptionResolver exceptionResolver;
+  private final ProblemDetailResolver problemDetailResolver;
 
   public RateLimitFilter(
       RateLimitProperties props,
       AuthRateLimiter rateLimiter,
       ClientIpResolver clientIpResolver,
-      @Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver) {
+      ProblemDetailResolver problemDetailResolver) {
     this.props = props;
     this.rateLimiter = rateLimiter;
     this.clientIpResolver = clientIpResolver;
-    this.exceptionResolver = exceptionResolver;
+    this.problemDetailResolver = problemDetailResolver;
   }
 
   @Override
@@ -47,8 +45,8 @@ public class RateLimitFilter extends OncePerRequestFilter {
       return;
     }
     long retryAfter = Math.max(1, Math.ceilDiv(probe.getNanosToWaitForRefill(), 1_000_000_000L));
-    exceptionResolver.resolveException(
-        request, response, null, new RateLimitExceededException(retryAfter));
+    problemDetailResolver.render(
+        request, response, new RateLimitExceededException(retryAfter));
   }
 
   @Override
