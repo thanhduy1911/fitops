@@ -29,6 +29,7 @@
         <jjwt.version>0.13.0</jjwt.version>
         <rest-assured.version>6.0.0</rest-assured.version>
         <bucket4j.version>8.18.0</bucket4j.version>
+        <lombok-mapstruct.version>0.2.0</lombok-mapstruct.version>
     </properties>
 
     <dependencyManagement>
@@ -300,6 +301,12 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                        </path>
+                        <!-- lets MapStruct see Lombok-generated getters/setters -->
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok-mapstruct-binding</artifactId>
+                            <version>${lombok-mapstruct.version}</version>
                         </path>
                         <path>
                             <groupId>org.mapstruct</groupId>
