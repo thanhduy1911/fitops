@@ -18,8 +18,8 @@ public class UserController {
   }
 
   @GetMapping("/me")
-  public UserResponse me(@AuthenticationPrincipal UUID user) {
-    return userService.getProfile(user);
+  public UserResponse me(@AuthenticationPrincipal UUID userId) {
+    return userService.getProfile(userId);
   }
 
   @PutMapping("/me")

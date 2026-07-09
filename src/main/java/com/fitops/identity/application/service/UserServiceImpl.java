@@ -7,7 +7,6 @@ import com.fitops.identity.api.response.UserResponse;
 import com.fitops.identity.domain.entity.User;
 import com.fitops.identity.infrastructure.mapper.UserMapper;
 import com.fitops.identity.infrastructure.persistence.UserRepository;
-import jakarta.validation.constraints.Size;
 import java.util.Locale;
 import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
@@ -40,12 +39,11 @@ public class UserServiceImpl implements UserService {
     return userMapper.toResponse(user);
   }
 
-  private static String normalizeDisplayName(@Size(max = 255) String displayName) {
+  private static String normalizeDisplayName(String displayName) {
     if (StringUtils.isBlank(displayName)) {
       return null;
     }
-    var trimmed = displayName.trim();
-    return trimmed.isEmpty() ? null : trimmed;
+    return displayName.trim();
   }
 
   private User loadActiveUser(UUID userId) {
