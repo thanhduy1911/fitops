@@ -12,4 +12,4 @@ import org.springframework.modulith.NamedInterface;
  * @param displayName may be {@code null}, consumers fall back to {@code username}.
  */
 @NamedInterface("port")
-public record UserSummary(UUID id, String userName, String displayName, String language) {}
+public record UserSummary(UUID id, String username, String displayName, String language) {}

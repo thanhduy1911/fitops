@@ -32,7 +32,7 @@ class UserQueryRepositoryTest {
 
     assertThat(summary).isPresent();
     assertThat(summary.get().id()).isEqualTo(saved.getId());
-    assertThat(summary.get().userName()).isEqualTo("user-active");
+    assertThat(summary.get().username()).isEqualTo("user-active");
     assertThat(summary.get().displayName()).isEqualTo("Display active");
     assertThat(summary.get().language()).isEqualTo("vi");
   }
