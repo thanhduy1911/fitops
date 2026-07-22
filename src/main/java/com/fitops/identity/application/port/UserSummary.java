@@ -6,8 +6,11 @@ import org.springframework.modulith.NamedInterface;
 /**
  * Minimal cross-module projection of a user, published to consumer modules.
  *
- * <p>Carries no PII: {@code email}, password, roles and every other sensitive field are
- * deliberately absent, so even a boundary mistake cannot leak sensitive identity data.
+ * <p>Excludes credentials and contact data: the password hash, {@code email} and role assignments
+ * are deliberately absent, so a boundary mistake cannot leak them. What remains is still personal
+ * data. {@code id}, {@code username} and {@code displayName} identify a user, and {@code
+ * displayName} is often a real name. Treat this record as personal data when logging or forwarding
+ * it, and keep new fields to the same bar: no credentials, no contact details.
  *
  * @param displayName may be {@code null}, consumers fall back to {@code username}.
  */
