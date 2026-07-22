@@ -7,5 +7,5 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface BodyStatRepository extends JpaRepository<BodyStat, UUID> {
-  Page<BodyStat> findByUserIdOrderByRecordedAtDesc(UUID id, Pageable pageable);
+  Page<BodyStat> findByUserIdOrderByRecordedAtDesc(UUID userId, Pageable pageable);
 }

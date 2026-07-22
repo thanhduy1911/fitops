@@ -20,7 +20,7 @@ public class ValidAgeValidator implements ConstraintValidator<ValidAge, LocalDat
   public boolean isValid(LocalDate dateOfBirth, ConstraintValidatorContext context) {
     if (dateOfBirth == null) return true; // @NotNull's job
     var today = LocalDate.now(ZoneOffset.UTC);
-    if (!dateOfBirth.isBefore(today)) return false;
+    if (dateOfBirth.isAfter(today)) return false;
 
     int age = Period.between(dateOfBirth, today).getYears();
     return age >= min && age <= max;

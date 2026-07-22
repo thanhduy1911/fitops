@@ -112,9 +112,7 @@ public class BodyStatRequestValidationTest {
 
   @Test
   void age_over120_rejected() {
-    assertThat(
-            violates(
-                withDob(LocalDate.now(ZoneOffset.UTC).minusYears(124).minusDays(1)), "dateOfBirth"))
+    assertThat(violates(withDob(LocalDate.now(ZoneOffset.UTC).minusYears(121)), "dateOfBirth"))
         .isTrue();
   }
 
