@@ -1,5 +1,6 @@
 package com.fitops.identity.infrastructure.persistence;
 
+import com.fitops.identity.application.port.UserSummary;
 import com.fitops.identity.domain.entity.User;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,4 +27,20 @@ public interface UserRepository extends JpaRepository<User, UUID> {
           + "LEFT JOIN FETCH user.roles "
           + "WHERE user.id = :id")
   Optional<User> findByIdWithRoles(@Param("id") UUID id);
+
+  @Query(
+      """
+      SELECT new com.fitops.identity.application.port.UserSummary(
+             user.id, user.username, user.displayName, user.language)
+      FROM User user
+      WHERE user.id = :id AND user.isActive = true
+      """)
+  Optional<UserSummary> findActiveSummaryById(@Param("id") UUID id);
+
+  @Query(
+      """
+      SELECT COUNT(user) > 0 FROM User user
+      WHERE user.id = :id AND user.isActive = true
+      """)
+  boolean existsActiveById(@Param("id") UUID id);
 }
