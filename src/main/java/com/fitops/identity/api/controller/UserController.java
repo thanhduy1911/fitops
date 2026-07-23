@@ -1,5 +1,6 @@
 package com.fitops.identity.api.controller;
 
+import com.fitops.identity.api.request.PatchProfileRequest;
 import com.fitops.identity.api.request.UpdateProfileRequest;
 import com.fitops.identity.api.response.UserResponse;
 import com.fitops.identity.application.service.UserService;
@@ -26,5 +27,11 @@ public class UserController {
   public UserResponse replace(
       @AuthenticationPrincipal UUID userId, @Valid @RequestBody UpdateProfileRequest request) {
     return userService.replaceProfile(userId, request);
+  }
+
+  @PatchMapping("/me")
+  public UserResponse patch(
+      @AuthenticationPrincipal UUID userId, @Valid @RequestBody PatchProfileRequest request) {
+    return userService.patchProfile(userId, request);
   }
 }
