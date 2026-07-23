@@ -21,7 +21,9 @@ public class PatchValueModelConverter implements ModelConverter {
     if (javaType != null && PatchValue.class.isAssignableFrom(javaType.getRawClass())) {
       var inner = javaType.containedTypeOrUnknown(0);
       return context.resolve(
-          new AnnotatedType(inner).jsonViewAnnotation(type.getJsonViewAnnotation()));
+          new AnnotatedType(inner)
+              .ctxAnnotations(type.getCtxAnnotations())
+              .jsonViewAnnotation(type.getJsonViewAnnotation()));
     }
     return chain.hasNext() ? chain.next().resolve(type, context, chain) : null;
   }

@@ -60,10 +60,5 @@ class PatchValueDeserializationTest {
     assertThat(probe.age().isPresent()).isFalse();
   }
 
-  record Probe(PatchValue<String> displayName, PatchValue<Integer> age) {
-    Probe {
-      displayName = displayName == null ? PatchValue.undefined() : displayName;
-      age = age == null ? PatchValue.undefined() : age;
-    }
-  }
+  record Probe(PatchValue<String> displayName, PatchValue<Integer> age) {}
 }
