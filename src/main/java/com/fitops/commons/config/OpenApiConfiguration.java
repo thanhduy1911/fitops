@@ -1,5 +1,6 @@
 package com.fitops.commons.config;
 
+import com.fitops.commons.api.jackson.PatchValueModelConverter;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
@@ -10,7 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class OpenApiConfig {
+public class OpenApiConfiguration {
 
   @Bean
   public OpenAPI fitopsOpenApi() {
@@ -33,5 +34,10 @@ public class OpenApiConfig {
                         .type(SecurityScheme.Type.HTTP)
                         .scheme("bearer")
                         .bearerFormat("JWT")));
+  }
+
+  @Bean
+  public PatchValueModelConverter patchValueModelConverter() {
+    return new PatchValueModelConverter();
   }
 }
