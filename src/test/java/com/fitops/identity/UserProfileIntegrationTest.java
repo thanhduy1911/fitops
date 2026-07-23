@@ -133,4 +133,151 @@ class UserProfileIntegrationTest {
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
   }
+
+  @Test
+  void patchMe_singleField_leavesOthersUnchanged() throws Exception {
+    String token = registerAndGetToken("pat@fitops.com", "pat");
+    // establish a full known state
+    mockMvc
+        .perform(
+            put("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"displayName":"Pat One","language":"en","avatarUrl":"https://cdn/pat.png"}
+                    """))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"displayName":"Pat Two"}
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.displayName").value("Pat Two"))
+        .andExpect(jsonPath("$.language").value("en")) // untouched
+        .andExpect(jsonPath("$.avatarUrl").value("https://cdn/pat.png")); // untouched
+  }
+
+  @Test
+  void patchMe_explicitNullAvatar_clearsIt() throws Exception {
+    String token = registerAndGetToken("nil@fitops.com", "nil");
+    mockMvc
+        .perform(
+            put("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"displayName":"Nil","language":"vi","avatarUrl":"https://cdn/nil.png"}
+                    """))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"avatarUrl":null}
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.avatarUrl").isEmpty()) // explicit null -> cleared
+        .andExpect(jsonPath("$.displayName").value("Nil")) // untouched
+        .andExpect(jsonPath("$.language").value("vi")); // untouched
+  }
+
+  @Test
+  void patchMe_nullLanguage_returns400General001() throws Exception {
+    String token = registerAndGetToken("nl@fitops.com", "nolan");
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"language":null}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
+  }
+
+  @Test
+  void patchMe_invalidLanguage_returns400General001() throws Exception {
+    String token = registerAndGetToken("il@fitops.com", "ilya");
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"language":"de"}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
+  }
+
+  @Test
+  void patchMe_httpAvatar_returns400General001() throws Exception {
+    String token = registerAndGetToken("ha@fitops.com", "hana");
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"avatarUrl":"http://cdn/x.png"}
+                    """))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
+  }
+
+  @Test
+  void patchMe_unauthenticated_returns401Auth001() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"displayName":"X"}
+                    """))
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.errorCode").value("AUTH_001"));
+  }
+
+  @Test
+  void patchMe_emptyBody_returns200Unchanged() throws Exception {
+    String token = registerAndGetToken("eb@fitops.com", "eddieb");
+    mockMvc
+        .perform(
+            put("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"displayName":"Eddie","language":"vi","avatarUrl":"https://cdn/e.png"}
+                    """))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            patch("/api/v1/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.displayName").value("Eddie"))
+        .andExpect(jsonPath("$.language").value("vi"))
+        .andExpect(jsonPath("$.avatarUrl").value("https://cdn/e.png"));
+  }
 }
