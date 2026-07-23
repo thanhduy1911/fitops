@@ -5,8 +5,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.fitops.commons.api.PatchValue;
 import com.fitops.commons.constants.ErrorCode;
 import com.fitops.commons.exception.UnauthorizedException;
+import com.fitops.identity.api.request.PatchProfileRequest;
 import com.fitops.identity.api.request.UpdateProfileRequest;
 import com.fitops.identity.api.response.UserResponse;
 import com.fitops.identity.domain.entity.User;
@@ -91,6 +93,57 @@ class UserServiceImplTest {
         user.getId(), new UpdateProfileRequest("  Bob  ", "vi", "https://cdn/bob.png"));
 
     assertThat(user.getDisplayName()).isEqualTo("Bob");
+    assertThat(user.getAvatarUrl()).isEqualTo("https://cdn/bob.png");
+  }
+
+  @Test
+  void patchProfile_absentFields_leaveUnchanged() {
+    var user = activeUser();
+    user.setDisplayName("Bob");
+    user.setAvatarUrl("https://cdn/bob.png");
+    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    when(userMapper.toResponse(user)).thenReturn(dummyResponse());
+
+    userService.patchProfile(
+        user.getId(),
+        new PatchProfileRequest(
+            PatchValue.undefined(), PatchValue.undefined(), PatchValue.undefined()));
+
+    assertThat(user.getDisplayName()).isEqualTo("Bob");
+    assertThat(user.getLanguage()).isEqualTo("vi");
+    assertThat(user.getAvatarUrl()).isEqualTo("https://cdn/bob.png");
+  }
+
+  @Test
+  void patchProfile_explicitNull_clearsNullableFields() {
+    var user = activeUser();
+    user.setDisplayName("Bob");
+    user.setAvatarUrl("https://cdn/bob.png");
+    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    when(userMapper.toResponse(user)).thenReturn(dummyResponse());
+
+    userService.patchProfile(
+        user.getId(),
+        new PatchProfileRequest(PatchValue.ofNull(), PatchValue.undefined(), PatchValue.ofNull()));
+
+    assertThat(user.getDisplayName()).isNull(); // explicit null -> cleared
+    assertThat(user.getAvatarUrl()).isNull(); // explicit null -> cleared
+    assertThat(user.getLanguage()).isEqualTo("vi"); // undefined -> unchanged
+  }
+
+  @Test
+  void patchProfile_presentValues_setNormalized() {
+    var user = activeUser();
+    when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+    when(userMapper.toResponse(user)).thenReturn(dummyResponse());
+
+    userService.patchProfile(
+        user.getId(),
+        new PatchProfileRequest(
+            PatchValue.of("  Bob  "), PatchValue.of("EN"), PatchValue.of("https://cdn/bob.png")));
+
+    assertThat(user.getDisplayName()).isEqualTo("Bob"); // trimmed
+    assertThat(user.getLanguage()).isEqualTo("en"); // lower-cased
     assertThat(user.getAvatarUrl()).isEqualTo("https://cdn/bob.png");
   }
 
