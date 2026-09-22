@@ -59,9 +59,10 @@ class AuthControllerTest {
   }
 
   @Test
-  void register_validRequest_returns201_withTokenBody() throws Exception {
+  void register_validRequest_returns201_withTokenBodyAndRefreshCookie() throws Exception {
     when(authService.register(any()))
-        .thenReturn(new MintedAccessToken("jwt-token", "Bearer", 3600L));
+        .thenReturn(
+            new LoginResult(new MintedAccessToken("jwt-token", "Bearer", 3600L), "raw-token"));
 
     mockMvc
         .perform(
@@ -69,12 +70,24 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                                        {"email":"joe@fitops.com","username":"joe_doe","password":"password123","displayName":"Joe"}
-                                        """))
+                    {"email":"joe@fitops.com","username":"joe_doe","password":"password123","displayName":"Joe"}
+                    """))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.accessToken").value("jwt-token"))
         .andExpect(jsonPath("$.tokenType").value("Bearer"))
-        .andExpect(jsonPath("$.expiresIn").value(3600));
+        .andExpect(jsonPath("$.expiresIn").value(3600))
+        .andExpect(cookie().value(refreshTokenProperties.cookieName(), "raw-token"))
+        .andExpect(cookie().httpOnly(refreshTokenProperties.cookieName(), true))
+        .andExpect(
+            cookie().secure(refreshTokenProperties.cookieName(), refreshTokenProperties.secure()))
+        .andExpect(
+            cookie().path(refreshTokenProperties.cookieName(), refreshTokenProperties.cookiePath()))
+        .andExpect(
+            cookie()
+                .maxAge(
+                    refreshTokenProperties.cookieName(),
+                    (int) refreshTokenProperties.ttl().toSeconds()))
+        .andExpect(cookie().sameSite(refreshTokenProperties.cookieName(), "Strict"));
   }
 
   @Test
@@ -85,8 +98,8 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                                        {"email":"not-an-email","username":"ab","password":"short","displayName":""}
-                                        """))
+                    {"email":"not-an-email","username":"ab","password":"short","displayName":""}
+                    """))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("GENERAL_001"))
         .andExpect(jsonPath("$.violations").isArray());
@@ -113,8 +126,8 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                      {"email":"joe@fitops.com","password":"password123"}
-                      """))
+                    {"email":"joe@fitops.com","password":"password123"}
+                    """))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.accessToken").value("jwt-token"))
         .andExpect(jsonPath("$.tokenType").value("Bearer"))
@@ -141,8 +154,8 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                      {"email":"not-an-email","password":""}
-                      """))
+                    {"email":"not-an-email","password":""}
+                    """))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.errorCode").value("GENERAL_001"));
   }

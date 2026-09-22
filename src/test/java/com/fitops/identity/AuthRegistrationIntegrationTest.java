@@ -3,6 +3,8 @@ package com.fitops.identity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,17 +38,27 @@ class AuthRegistrationIntegrationTest {
   }
 
   @Test
-  void register_validRequest_returns201_withRealToken() throws Exception {
-    mockMvc
-        .perform(
-            post("/api/v1/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    registerJson("john.doe@fitops.com", "john_doe", "password123", "John Doe")))
-        .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.accessToken").isNotEmpty())
-        .andExpect(jsonPath("$.tokenType").value("Bearer"))
-        .andExpect(jsonPath("$.expiresIn").value(3600));
+  void register_validRequest_returns201_withRealTokenAndRefreshCookie() throws Exception {
+    var response =
+        mockMvc
+            .perform(
+                post("/api/v1/auth/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        registerJson("john.doe@fitops.com", "john_doe", "password123", "John Doe")))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.accessToken").isNotEmpty())
+            .andExpect(jsonPath("$.tokenType").value("Bearer"))
+            .andExpect(jsonPath("$.expiresIn").value(3600))
+            .andExpect(cookie().sameSite("refreshToken", "Strict"))
+            .andReturn()
+            .getResponse();
+    var cookie = response.getCookie("refreshToken");
+    assertThat(cookie).isNotNull();
+    assertThat(cookie.getValue()).isNotBlank();
+    assertThat(cookie.isHttpOnly()).isTrue();
+    assertThat(cookie.getSecure()).isTrue();
+    assertThat(cookie.getPath()).isEqualTo("/api/v1/auth");
   }
 
   @Test

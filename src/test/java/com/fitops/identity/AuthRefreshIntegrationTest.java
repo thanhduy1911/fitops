@@ -164,6 +164,19 @@ class AuthRefreshIntegrationTest {
         .andExpect(jsonPath("$.errorCode").value("AUTH_003"));
   }
 
+  @Test
+  void refresh_afterRegister_succeeds_realSessionOpened() throws Exception {
+    var registerCookie = registerAndGetCookie();
+    assertThat(registerCookie).isNotNull();
+    assertThat(registerCookie.getValue()).isNotBlank();
+
+    mockMvc
+        .perform(post("/api/v1/auth/refresh").cookie(registerCookie))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.accessToken").isNotEmpty())
+        .andExpect(cookie().exists(cookieName));
+  }
+
   @TestConfiguration
   static class ProbeEndpoint {
     @RestController
@@ -213,5 +226,21 @@ class AuthRefreshIntegrationTest {
   private static String sha256Hex(String value) throws Exception {
     MessageDigest digest = MessageDigest.getInstance("SHA-256");
     return HexFormat.of().formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
+  }
+
+  private Cookie registerAndGetCookie() throws Exception {
+    var response =
+        mockMvc
+            .perform(
+                post("/api/v1/auth/register")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        """
+                                            {"email":"john.doe@fitops.com","username":"john_doe","password":"password123","displayName":"john_doe"}
+                                            """))
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse();
+    return response.getCookie(cookieName);
   }
 }
