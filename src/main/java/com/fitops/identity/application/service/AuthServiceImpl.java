@@ -63,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
   @Override
   @Transactional
-  public MintedAccessToken register(RegisterRequest request) {
+  public LoginResult register(RegisterRequest request) {
     String email = request.email().trim().toLowerCase(Locale.ROOT);
     String username = request.username().trim();
 
@@ -94,8 +94,9 @@ public class AuthServiceImpl implements AuthService {
     }
 
     applicationEventPublisher.publishEvent(new UserRegisteredEvent(user.getId(), Instant.now()));
-    // TODO:instant 7-day session on signup - see FO-0045 "Deferred" section
-    return accessTokenMinter.mint(user.getId(), Set.of(ROLE_USER));
+    var minted = accessTokenMinter.mint(user.getId(), Set.of(ROLE_USER));
+    var rawRefreshToken = refreshTokenService.issue(user.getId());
+    return new LoginResult(minted, rawRefreshToken);
   }
 
   @Override

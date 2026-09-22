@@ -72,13 +72,9 @@ class AuthServiceImplTest {
     when(passwordEncoder.encode("password123")).thenReturn("hashedPw");
     when(accessTokenMinter.mint(any(), any()))
         .thenReturn(new MintedAccessToken("jwt-token", "Bearer", 3600L));
+    when(refreshTokenService.issue(any())).thenReturn("raw-refresh-token");
 
-    var response = authServiceImpl.register(registerRequest);
-
-    assertThat(response.accessToken()).isEqualTo("jwt-token");
-    assertThat(response.tokenType()).isEqualTo("Bearer");
-    assertThat(response.expiresIn()).isEqualTo(3600L);
-    verify(accessTokenMinter).mint(any(), eq(Set.of("ROLE_USER")));
+    var result = authServiceImpl.register(registerRequest);
 
     var userCaptor = ArgumentCaptor.forClass(User.class);
     verify(userRepository).saveAndFlush(userCaptor.capture());
@@ -88,6 +84,13 @@ class AuthServiceImplTest {
     assertThat(saved.getPassword()).isEqualTo("hashedPw");
     assertThat(saved.getDisplayName()).isEqualTo("John Doe");
     assertThat(saved.getRoles()).contains(roleUser);
+
+    assertThat(result.accessToken().accessToken()).isEqualTo("jwt-token");
+    assertThat(result.accessToken().tokenType()).isEqualTo("Bearer");
+    assertThat(result.accessToken().expiresIn()).isEqualTo(3600L);
+    assertThat(result.rawRefreshToken()).isEqualTo("raw-refresh-token");
+    verify(accessTokenMinter).mint(eq(saved.getId()), eq(Set.of("ROLE_USER")));
+    verify(refreshTokenService).issue(saved.getId());
 
     var eventCaptor = ArgumentCaptor.forClass(UserRegisteredEvent.class);
     verify(applicationEventPublisher).publishEvent(eventCaptor.capture());

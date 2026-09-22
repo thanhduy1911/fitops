@@ -6,7 +6,7 @@ import com.fitops.identity.api.request.RegisterRequest;
 import com.fitops.identity.api.request.ResetPasswordRequest;
 
 public interface AuthService {
-  MintedAccessToken register(RegisterRequest registerRequest);
+  LoginResult register(RegisterRequest registerRequest);
 
   LoginResult login(LoginRequest request);
 

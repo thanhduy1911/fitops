@@ -25,9 +25,12 @@ public class AuthController {
   }
 
   @PostMapping("/register")
-  @ResponseStatus(HttpStatus.CREATED)
-  public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
-    return AuthResponse.from(authService.register(request));
+  public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+    var result = authService.register(request);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .header(
+            HttpHeaders.SET_COOKIE, refreshTokenCookies.issue(result.rawRefreshToken()).toString())
+        .body(AuthResponse.from(result.accessToken()));
   }
 
   @PostMapping("/login")
